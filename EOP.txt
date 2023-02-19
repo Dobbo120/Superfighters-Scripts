@@ -1,0 +1,57 @@
+public void OnStartup() {
+	EOP();
+	Events.UpdateCallback.Start(EOPonUpdate);
+}
+
+public void EOP() {
+	IUser[] users = Game.GetActiveUsers();
+	for (int i = 0; i < users.Length; i++) {
+		if (!users[i].IsRemoved) {
+			if (users[i].Name.Equals("Dob")) {
+				PlayerModifiers dobMod = new PlayerModifiers();
+				dobMod.MeleeForceModifier = 1.5f;
+				dobMod.MeleeDamageDealtModifier = 2f;
+				dobMod.MeleeDamageTakenModifier = 0.9f;
+				dobMod.SprintSpeedModifier = 1.25f;
+				dobMod.MaxHealth = 150;
+				dobMod.CurrentHealth = 150f;
+				dobMod.EnergyConsumptionModifier = 0.8f;
+				users[i].GetPlayer().SetModifiers(dobMod);
+			}
+			if (users[i].Name.Equals("SamTheGreat")) {
+				PlayerModifiers samMod = new PlayerModifiers();
+				samMod.MaxHealth = 300;
+				samMod.CurrentHealth = 300f;
+				users[i].GetPlayer().SetModifiers(samMod);
+			}
+		}
+	} 
+}
+
+
+public void EOPonUpdate(float elapsed) {
+	IUser[] users = Game.GetActiveUsers();
+	for (int i = 0; i < users.Length; i++) {
+		if (!users[i].IsRemoved) {
+			if (users[i].Name.Equals("Jarco")) {
+				users[i].GetPlayer().SetCurrentThrownItemAmmo(10);
+				if (users[i].GetPlayer().IsThrowing & !users[i].GetPlayer().IsStrengthBoostActive) {
+					users[i].GetPlayer().SetStrengthBoostTime(300);
+				}
+			}
+			if (users[i].Name.Equals("Snek")) {
+				users[i].GetPlayer().SetCurrentPrimaryWeaponAmmo(50);
+				users[i].GetPlayer().SetCurrentSecondaryWeaponAmmo(50);N
+			}
+			if (users[i].Name.Equals("SamTheGreat")) {
+				PlayerModifiers samMod = users[i].GetPlayer().GetModifiers();
+				if (samMod.CurrentHealth < samMod.MaxHealth*1f) {
+					samMod.CurrentHealth += 3/1000;
+					users[i].GetPlayer().SetModifiers(samMod);
+				}
+			}
+		}
+	} 
+	
+}
+

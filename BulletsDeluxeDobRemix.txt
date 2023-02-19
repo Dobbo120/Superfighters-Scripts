@@ -1,0 +1,3130 @@
+/*
+    ____        ____     __          ____     	 __	    ____       __              
+   / __ )__  __/ / /__  / /______   / __ \___   / /_	   / __ \___  / /_  ___  _____ 
+  / __  / / / / / / _ \/ __/ ___/  / / / / __\ / __ \	  / / / / _ \/ / / / / |/_/ _ \
+ / /_/ / /_/ / / /  __/ /_(__  )  / /_/ / /_/ / /_/ /  / /_/ /  __/ / /_/ />  </  __/
+/_____/\__,_/_/_/\___/\__/____/  /_____/\____/_____/	/_____/\___/_/\__,_/_/|_|\___/
+	Writen By Dobbo and Ebomb09
+	
+	Credits:
+		-Danger Ross
+		-exsceses
+		-motto
+		-KliPeH
+		-Tio A
+		-Tomo
+		-tilt56
+		-Dev
+		-NearHuscarl
+*/
+
+//Event Tracking
+	public static Events.UpdateCallback Updater 						= null;
+	public static Events.ProjectileHitCallback ProjectileHit 			= null;
+	public static Events.ProjectileCreatedCallback ProjectileCreated 	= null;
+	public static Events.ObjectCreatedCallback ObjectCreated 			= null;
+
+//List Tracking
+	public static List<Bullet> BulletList 								= new List<Bullet>();
+	public static List<gPlayer> PlayerList 								= new List<gPlayer>();
+	public static List<dItem> DroppedItems 								= new List<dItem>();
+
+//Common Global Variables
+	public static Random rnd											= new Random();
+	public static float Time 											= 0f;
+	public static List<ProjectileItem> ProjectileItems 					= new List<ProjectileItem>();
+
+//Command Declarations
+	public static Events.UserMessageCallback UserMessage 				= null;
+	public static Color colHeader 										= new Color(255, 216, 0);
+	public static Color colDesc 										= new Color(107, 36, 48);
+	public static Color colFailed 										= new Color(255, 0, 0);
+	public static Color colPassed 										= new Color(0, 255, 0);
+	public static string cmdSeperator									= "---------------------------------------";
+
+//Config File
+	public static IScriptStorage ConfigFile = null;
+
+/*
+	Ammo Declarations:
+	
+	new Ammo(	
+		UpdateCallback	-	(Action<IProjectile>),
+		HitCallback		-	(Action<IProjectile, ProjectileHitArgs>),
+		Name			-	(string),
+		Author			-	(string),
+		Description		-	(string)
+	),
+*/
+public static Ammo[] AmmoTypes = new Ammo[]{
+	
+	new Ammo(
+		null,
+		chainOnHit,
+		"Chain Shots",
+		"Ebomb09",
+		"Makes bullets bounce off players, and towards others once"
+	),	
+	
+	new Ammo(
+		circlesUpdate,
+		null,
+		"Circles",
+		"Danger Ross",
+		"Makes bullets go in circles clockwise"
+	),	
+	
+	new Ammo(
+		null,
+		explosivebulletHit,
+		"Explosive Bullets",
+		"exsceses",
+		"Makes bullets deal AoE (area of effect) damage"
+	),
+	
+	new Ammo(
+		floatiesUpdate,						
+		null,								
+		"Floaties",							
+		"Danger Ross",						
+		"Makes bullets stay in one spot"	
+	),		
+	
+	new Ammo(
+		healingdartUpdate,						
+		healingdartHit,								
+		"Healing Darts",
+		"KliPeH & Ebomb09",
+		"Heals player's health by half the damage of the gun"
+	),	
+	
+	new Ammo(
+		heavySlugUpdate,						
+		null,								
+		"Heavy Slugs",							
+		"motto",						
+		"All bullets are slower, and do twice the damage. They are also affected by gravity"	
+	),		
+	
+	new Ammo(
+		null,						
+		hollowPointHit,								
+		"Hollow Points",							
+		"exsceses",						
+		"Makes bullets deal (stacking) bleed damage over time"	
+	),
+	
+	new Ammo(
+		homingUpdate,						
+		null,								
+		"Homing",							
+		"Danger Ross",						
+		"Makes bullets home in on targets. Homes in faster when closer. Can hit people around corners"	
+	),	
+	
+	new Ammo(
+		null,						
+		hypnoticammoHit,								
+		"Hypnotic Ammo",							
+		"Tio A & Ebomb09",				
+		"Bullets convert shot players to the team of who shot it"	
+	),
+	
+	new Ammo(
+		wispUpdate,
+		null,
+		"Wisp Ammo",
+		"Ebomb09",
+		"Bullets move slower and follow a wave"
+	),
+	
+	new Ammo(
+		null,
+		lifestealHit,
+		"Life Steal",
+		"Tomo",
+		"Gives you bonus HP when you shoot someone"
+	),	
+	
+	new Ammo(
+		botbulletUpdate,
+		null,
+		"Bot Bullet",
+		"Dave",
+		"When shot, a bot arrives at player to punch them, disappears after 1.5 sec"
+	),
+	
+	new Ammo(
+		presentdayUpdate,
+		null,
+		"PresentDay",
+		"NearHuscarl",
+		"Make bullet become present which spawns weapon/powerup when opened. Sometimes it spawns something else..."
+	),
+	
+	new Ammo(
+		slomoUpdate,
+		null,
+		"Slomo Bullets",
+		"tilt56",
+		"Bullets move incredibly slowly"
+	),
+
+	new Ammo(
+		null,
+		teleHit,
+		"Telebullets",
+		"motto",
+		"Teleports you where the bullet hits"
+	),
+	
+	new Ammo(
+		null,
+		balloonHit,
+		"Balloon Bullets",
+		"motto",
+		"Attaches a balloon on targets for 3 seconds"
+	),
+	
+	new Ammo(
+		null,
+		glooHit,
+		"Gloo Bullets",
+		"Ebomb09",
+		"Releases a glob that causes objects to stick in places"
+	),
+	
+	new Ammo(
+		null,
+		grappleHit,
+		"Grapple Shots",
+		"Ebomb09",
+		"Pull yourself and objects with grappling hooks"
+	),
+	
+	new Ammo(
+		weaponUpdate,
+		null,
+		"Weapon Bullets",
+		"Ebomb09",
+		"Fire weapons to shoot even more bullets!"
+	),
+	
+	new Ammo(
+		electricUpdate,
+		electricHit,
+		"Electric Bullets",
+		"NearHuscarl",
+		"EMP bullets that have a chance to stun players or make a blast"
+	),
+	
+	new Ammo(
+		dragonCreate,
+		null,
+		"Dragons Breath",
+		"motto",
+		"Turns any gun into a shotgun that shoots fiery short-ranged shells with unpredictable paths"
+	),
+	
+	new Ammo(
+		roundCreate,
+		null,
+		"Round Bullets",
+		"Quinterball",
+		"Replaces bullets with baseballs"
+	),
+	
+	new Ammo(
+		null,
+		domeHit,
+		"Dome Bullets",
+		"tilt56",
+		"Encase the enemy inside a dome on hit."
+	),
+	
+	new Ammo(
+		laserCreate,
+		null,
+		"Laser Bullets",
+		"Motto73",
+		"Turns all bullets into laser beams"
+	)
+};
+
+/*
+	Init Functions
+*/
+
+public static void OnStartup(){
+	
+	//Add Applicable Weapons
+	foreach(ProjectileItem item in Enum.GetValues(typeof(ProjectileItem))){
+		
+		if(item != ProjectileItem.NONE)
+			ProjectileItems.Add(item);
+	}
+	
+	//Set File
+	ConfigFile = Game.GetSharedStorage("BDCONFIG");
+	
+	//Initialize Events
+	Updater = Events.UpdateCallback.Start(OnUpdate);
+	ProjectileHit = Events.ProjectileHitCallback.Start(OnProjectileHit);
+	ProjectileCreated = Events.ProjectileCreatedCallback.Start(OnProjectileCreated);	
+	ObjectCreated = Events.ObjectCreatedCallback.Start(OnObjectCreated);	
+	
+	m_presentdayTerminated = Events.ObjectTerminatedCallback.Start(presentdayTerminated);
+	
+	UserMessage = Events.UserMessageCallback.Start(OnUserMessage);
+	
+	//Auto Randomize Items
+	if(GetConfigVar<bool>("ITEMS_AUTO_RANDOMIZE", false)){
+		WeaponsRandomize();
+	}
+	
+	//Add Players To Tracking List
+	foreach(IPlayer ply in Game.GetPlayers()){
+		PlayerList.Add(new gPlayer(ply));
+	}
+}
+
+public void OnShutdown(){
+	
+	if(Updater != null)
+		Updater.Stop();	
+	
+	if(ProjectileHit != null)
+		ProjectileHit.Stop();	
+	
+	if(ProjectileCreated != null)
+		ProjectileCreated.Stop();	
+	
+	if(ObjectCreated != null)
+		ObjectCreated.Stop();
+	
+	if(UserMessage != null)
+		UserMessage.Stop();
+}
+
+/*
+	User Commands and Config
+*/
+public static void OnUserMessage(UserMessageCallbackArgs args){
+	
+	if(args.IsCommand && args.User.IsModerator){
+		string[] c_args = args.CommandArguments.Split(' ');
+		
+		switch(args.Command){
+			
+			//List Commands
+			case "BD_HELP": {
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage("BULLETS DELUXE", Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				//Ammo Commands
+				Game.ShowChatMessage("'/BD_AMMOS_GET_ALL'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Get all bullet types", colDesc, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage("'/BD_AMMOS_GET_ENABLED'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Get all enabled bullet types", colDesc, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage("'/BD_AMMOS_SET [X] [0 or 1]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Set bullet type[X] enabled or disabled [Y]", colDesc, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage("'/BD_AMMOS_RESET'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Reset all disabled bullet types", colDesc, args.User.UserIdentifier);
+					
+				//Item Commands
+				Game.ShowChatMessage("'/BD_ITEMS_GET_ALL'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Get all item's set bullet type", colDesc, args.User.UserIdentifier);				
+					
+				Game.ShowChatMessage("'/BD_ITEMS_GET [X]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Get item[X]'s set bullet type", colDesc, args.User.UserIdentifier);
+
+				Game.ShowChatMessage("'/BD_ITEMS_SET [X] [Y]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Set item[X] to bullet type [Y]", colDesc, args.User.UserIdentifier);				
+					
+				Game.ShowChatMessage("'/BD_ITEMS_SET_ALL [X]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Sets all items to bullet type [X]", colDesc, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage("'/BD_ITEMS_RANDOMIZE'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Randomize all items with enabled bullet types", colDesc, args.User.UserIdentifier);					
+					
+				Game.ShowChatMessage("'/BD_ITEMS_AUTORANDOMIZE [0 or 1]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Automatically randomize the items every round", colDesc, args.User.UserIdentifier);				
+					
+				Game.ShowChatMessage("'/BD_ITEMS_RESET'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Reset all set bullet type items", colDesc, args.User.UserIdentifier);
+					
+				Game.ShowChatMessage("'/BD_CRATES_SET'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Set drop rate of crate", colDesc, args.User.UserIdentifier);				
+					
+				Game.ShowChatMessage("'/BD_GIVE [X] [Y]'", colHeader, args.User.UserIdentifier);
+					Game.ShowChatMessage("  Give player[X] bullet type [Y]", colDesc, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage("SCROLL UP FOR MORE COMMANDS", Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				break;
+			}			
+			
+			//List All Bullet Types
+			case "BD_AMMOS_GET_ALL": {
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage("ALL BULLET TYPES", Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				for(int i = 0;i < AmmoTypes.Length;i ++){
+					Game.ShowChatMessage(i + ". " + AmmoTypes[i].Name, Color.White, args.User.UserIdentifier);
+				}
+				Game.ShowChatMessage(AmmoTypes.Length + ". None", Color.White, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				break;
+			}
+
+			//List Enabled Bullet Types
+			case "BD_AMMOS_GET_ENABLED": {
+				string[] Disabled = GetConfigVar<string[]>("DISABLED_AMMOS", new string[] {""});
+			
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage("ENABLED BULLET TYPES", Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+			
+				for(int i = 0;i < AmmoTypes.Length;i ++){
+					
+					if(!Disabled.Contains(AmmoTypes[i].Name)){
+						Game.ShowChatMessage(i + ". " + AmmoTypes[i].Name, Color.White, args.User.UserIdentifier);
+					}else{
+						Game.ShowChatMessage(i + ". " + AmmoTypes[i].Name, new Color(50, 50, 50), args.User.UserIdentifier);
+					}
+				}
+				Game.ShowChatMessage(AmmoTypes.Length + ". None", Color.White, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				break;
+			}			
+			
+			//Disable Or Enable Bullet Bullet Types
+			case "BD_AMMOS_SET": {
+				
+				if(c_args.Length == 2){
+					string[] Disabled = GetConfigVar<string[]>("DISABLED_AMMOS", new string[] {""});
+					
+					int BulletID = GetAmmo(c_args[0]);
+					
+					if(BulletID >= 0 && BulletID < AmmoTypes.Length){
+						List<string> AmmoList = Disabled.ToList();
+						int index = AmmoList.FindIndex(x => x == AmmoTypes[BulletID].Name);
+						
+						//Enable
+						if(c_args[1] == "1" || c_args[1].ToUpper() == "ENABLE"){
+							
+							if(index >= 0){
+								Game.ShowChatMessage("[" + AmmoTypes[BulletID].Name + "] enabled", colPassed, args.User.UserIdentifier);
+								AmmoList.RemoveAt(index);
+							}else{
+								Game.ShowChatMessage("[" + AmmoTypes[BulletID].Name + "] already enabled", colPassed, args.User.UserIdentifier);
+							}
+							
+						//Disable
+						}else if(c_args[1] == "0" || c_args[1].ToUpper() == "DISABLE"){
+							
+							if(index >= 0){
+								Game.ShowChatMessage("[" + AmmoTypes[BulletID].Name + "] already disabled", colPassed, args.User.UserIdentifier);								
+							}else{
+								Game.ShowChatMessage("[" + AmmoTypes[BulletID].Name + "] disabled", colPassed, args.User.UserIdentifier);
+								AmmoList.Add(AmmoTypes[BulletID].Name);
+							}
+
+						//Failed To Find Enable or Disabled
+						}else{
+							Game.ShowChatMessage("/BD_AMMOS_SET : Y must equal 0, 1, enable, or disable", colFailed, args.User.UserIdentifier);	
+						}							
+						SetConfigVar<string[]>("DISABLED_AMMOS", AmmoList.ToArray());
+					
+					//Failed Out Of Bounds
+					}else{
+						Game.ShowChatMessage("/BD_AMMOS_SET : X out of bounds of array", colFailed, args.User.UserIdentifier);			
+					}
+				
+				//Failed To Find Args
+				}else{
+					Game.ShowChatMessage("/BD_AMMOS_SET [BulletType] [0, 1]", colFailed, args.User.UserIdentifier);		
+				}
+				break;
+			}
+			
+			//Reset All Disabled Ammos
+			case "BD_AMMOS_RESET": {			
+				SetConfigVar<string[]>("DISABLED_AMMOS", new string[]{""});
+				Game.ShowChatMessage("Enabled all ammo types", colPassed, args.User.UserIdentifier);		
+				break;
+			}			
+			
+			case "BD_ITEMS_RANDOMIZE": {
+				WeaponsRandomize();
+				Game.ShowChatMessage("Randomized all items", colPassed, args.User.UserIdentifier);	
+				break;
+			}			
+			
+			case "BD_ITEMS_AUTORANDOMIZE": {
+
+				if(c_args.Length == 1 && c_args[0] != ""){
+					
+					if(c_args[0] == "0" || c_args[0].ToUpper() == "DISABLE"){
+						SetConfigVar<bool>("ITEMS_AUTO_RANDOMIZE", false);
+						Game.ShowChatMessage("Disabled automatic randomization of items", colPassed, args.User.UserIdentifier);	
+					}
+					
+					if(c_args[0] == "1" || c_args[0].ToUpper() == "ENABLE"){
+						SetConfigVar<bool>("ITEMS_AUTO_RANDOMIZE", true);
+						Game.ShowChatMessage("Enabled automatic randomization of items", colPassed, args.User.UserIdentifier);	
+					}
+				}else{
+					Game.ShowChatMessage("/BD_ITEMS_AUTORANDOMIZE [0, 1]", colFailed, args.User.UserIdentifier);
+				}
+				break;
+			}
+			
+			//Assign Bullet Type To Item
+			case "BD_ITEMS_SET": {
+			
+				if(c_args.Length == 2){
+					int WeaponID = GetWeapon(c_args[0]);
+					int BulletID = GetAmmo(c_args[1]);
+					
+					//Not Default Values Set In Config
+					if(WeaponID >= 1 && BulletID >= 0 && BulletID <= AmmoTypes.Length){
+						
+						//Not NONE Ammo
+						if(BulletID != AmmoTypes.Length){
+							SetConfigVar<string>(GetWeaponName(WeaponID) + "_AMMO", AmmoTypes[BulletID].Name);
+							Game.ShowChatMessage("[" + GetWeaponName(WeaponID) + "] ammo set to [" + AmmoTypes[BulletID].Name + "]", colPassed, args.User.UserIdentifier);
+							
+						//NONE Ammo
+						}else{
+							SetConfigVar<string>(GetWeaponName(WeaponID) + "_AMMO", "None");
+							Game.ShowChatMessage("[" + GetWeaponName(WeaponID) + "] ammo set to [None]", colPassed, args.User.UserIdentifier);
+						}
+						
+					//Failed 
+					}else if(WeaponID < 1){
+						Game.ShowChatMessage("/BD_ITEMS_SET : [WeaponItem] invalid weapon name or index", colFailed, args.User.UserIdentifier);	
+						
+					}else if(!((BulletID >= 0 && BulletID < AmmoTypes.Length) || BulletID == AmmoTypes.Length)){
+						Game.ShowChatMessage("/BD_ITEMS_SET : [BulletType] invalid bullet name or index", colFailed, args.User.UserIdentifier);	
+					}
+					
+				//Failed To Find Args
+				}else{
+					Game.ShowChatMessage("/BD_ITEMS_SET [WeaponItem] [BulletType]", colFailed, args.User.UserIdentifier);		
+				}		
+
+				//Check for crate enable
+				CrateCheck();		
+				
+				break;
+			}				
+			
+			//Assign Bullet Type To All Items
+			case "BD_ITEMS_SET_ALL": {
+			
+				if(c_args.Length == 1){		
+					int BulletID = GetAmmo(c_args[0]);
+					
+					//Not Default Values Set In Config
+					if(BulletID >= 0 && BulletID <= AmmoTypes.Length){
+						
+						//Not NONE Ammo
+						if(BulletID != AmmoTypes.Length){
+							
+							foreach(ProjectileItem item in ProjectileItems){
+								SetConfigVar<string>(GetWeaponName(item) + "_AMMO", AmmoTypes[BulletID].Name);	
+							}
+							Game.ShowChatMessage("All items ammo set to [" + AmmoTypes[BulletID].Name + "]", colPassed, args.User.UserIdentifier);
+							
+						//NONE Ammo
+						}else{
+							
+							foreach(ProjectileItem item in ProjectileItems){
+								SetConfigVar<string>(GetWeaponName(item) + "_AMMO", "None");	
+							}
+							Game.ShowChatMessage("All items ammo set to [None]", colPassed, args.User.UserIdentifier);
+						}
+						
+					//Failed 
+					}else if(!((BulletID >= 0 && BulletID < AmmoTypes.Length) || BulletID == AmmoTypes.Length)){
+						Game.ShowChatMessage("/BD_ITEMS_SET_ALL : [BulletType] invalid bullet name or index", colFailed, args.User.UserIdentifier);	
+					}
+					
+				//Failed To Find Args
+				}else{
+					Game.ShowChatMessage("/BD_ITEMS_SET_ALL [BulletType]", colFailed, args.User.UserIdentifier);		
+				}	
+
+				//check for crate enable
+				CrateCheck();			
+				
+				break;
+			}		
+			
+			//Reset Default Ammos
+			case "BD_ITEMS_RESET": {
+				SetConfigVar<bool>("SPECIAL_CRATE_ENABLED", true);
+				
+				//Cycle Each WeaponItem
+				foreach(ProjectileItem item in ProjectileItems){	
+					SetConfigVar<string>(GetWeaponName(item) + "_AMMO", "None");					
+				}
+				Game.ShowChatMessage("All weapons ammo set to [None]", colPassed, args.User.UserIdentifier);		
+				break;
+			}			
+			
+			//Get Ammo For Specific WeaponItem
+			case "BD_ITEMS_GET": {
+				
+				if(c_args.Length == 1 && c_args[0] != ""){
+					int WeaponID = GetWeapon(c_args[0]);
+					
+					if(WeaponID != -1){
+						Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+						Game.ShowChatMessage("WEAPONITEM BULLETTYPE", Color.White, args.User.UserIdentifier);
+						Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+						
+						string AmmoName = GetConfigVar<string>(GetWeaponName(WeaponID) + "_AMMO", "None");
+						Game.ShowChatMessage("[" + GetWeaponName(WeaponID) + "] ammo is [" + AmmoName + "]", Color.White, args.User.UserIdentifier);
+						
+						Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+					}else{
+						Game.ShowChatMessage("/BD_ITEMS_GET : WeaponItem invalid weapon name or index",  Color.White, args.User.UserIdentifier);
+					}
+					
+				}else{
+					Game.ShowChatMessage("/BD_ITEMS_GET [WeaponItem]", colFailed, args.User.UserIdentifier);		
+				}
+				break;
+			}
+			
+			//Get Ammo For All WeaponItem
+			case "BD_ITEMS_GET_ALL": {
+				bool found = false;
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage("ALL WEAPONITEM BULLETTYPES", Color.White, args.User.UserIdentifier);
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);
+				
+				foreach(ProjectileItem item in ProjectileItems){					
+					string AmmoName = GetConfigVar<string>(GetWeaponName(item) + "_AMMO", "None");
+					
+					//Weapon Item Not None
+					if(AmmoName != "None"){
+						found = true;
+						Game.ShowChatMessage("[" + GetWeaponName(item) + "] ammo is [" + AmmoName + "]", Color.White, args.User.UserIdentifier);
+					}
+				}
+			
+				if(!found)
+					Game.ShowChatMessage("No items set to ammo types", Color.White, args.User.UserIdentifier);
+				
+				Game.ShowChatMessage(cmdSeperator, Color.White, args.User.UserIdentifier);				
+				break;
+			}
+			
+			case "BD_CRATES_SET": {
+				
+				if(c_args.Length == 1 && c_args[0] != ""){
+					int rate = 0;
+					
+					if(Int32.TryParse(c_args[0], out rate)){
+						
+						if(0 <= rate && rate <= 100){
+							SetConfigVar<int>("SPECIAL_CRATE_DROP_RATE", rate);
+							Game.ShowChatMessage("Special crate drop chance set to " + rate + "%", colPassed, args.User.UserIdentifier);
+						}else{
+							Game.ShowChatMessage("/BD_CRATES_SET : Drop chance out of range, 0 - 100", colFailed, args.User.UserIdentifier);
+						}
+					}else{
+						Game.ShowChatMessage("/BD_CRATES_SET : Drop non integer type", colFailed, args.User.UserIdentifier);
+					}
+				}else{
+					Game.ShowChatMessage("/BD_CRATES_SET [DropChance 0% - 100%]", colFailed, args.User.UserIdentifier);
+				}
+				
+				break;
+			}
+			
+			case "BD_GIVE": {
+				
+				if(c_args.Length == 2){
+					int PlayerID = GetPlayer(c_args[0]);
+					int BulletID = GetAmmo(c_args[1]);				
+				
+					if(PlayerID != -1 && BulletID >= 0 && BulletID < AmmoTypes.Length){
+						IPlayer target = Game.GetPlayer(PlayerID);
+					
+						if(target != null){
+							PickupCustomBullet(target, AmmoTypes[BulletID]);
+							Game.ShowChatMessage("Sent [" + AmmoTypes[BulletID].Name + "] to " + target.Name, colPassed, args.User.UserIdentifier);
+						}
+					}
+					
+				}else{
+					Game.ShowChatMessage("/BD_GIVE [PlayerSlot or PlayerName] [BulletType]", colFailed, args.User.UserIdentifier);
+				}
+				break;
+			}
+		}
+	}
+}
+
+public static void WeaponsRandomize(){
+	//Disable Crates
+	SetConfigVar<bool>("SPECIAL_CRATE_ENABLED", false);
+	
+	//Cycle Weapons
+	foreach(ProjectileItem item in ProjectileItems){									
+		//Get Random Ammo If Any Enabled
+		Ammo am = GetRandomAmmo();
+		
+		if(am != null)
+			SetConfigVar<string>(GetWeaponName(item) + "_AMMO", am.Name);
+	}
+}
+
+public static void CrateCheck(){
+	bool crate_enabled = false;
+	
+	//Cycle Weapons
+	foreach(ProjectileItem item in ProjectileItems){
+	
+		//Find if Enabled
+		string am = GetConfigVar<string>(GetWeaponName(item) + "_AMMO", "");
+
+		if(am == "" || am == "None"){				
+			crate_enabled = true;
+			break;
+		}
+	}
+
+	//Edit Config
+	SetConfigVar<bool>("SPECIAL_CRATE_ENABLED", crate_enabled);
+}
+
+/*
+	Events
+*/
+public static void OnUpdate(float t){
+	Time = t;
+
+	//Update Bullets
+	for(int i = 0;i < BulletList.Count;i ++){
+		Bullet b = BulletList[i];
+		
+		//Not Removed Or Collided
+		if(!b.Projectile.IsRemoved){
+			b.Update();
+			
+		//Clear From List
+		}else{
+			BulletList.RemoveAt(i);
+		}
+	}
+	
+	//Update Players
+	foreach(gPlayer ply in PlayerList){
+		ply.Update();
+	}	
+}
+
+public static void OnObjectCreated(IObject[] objects){
+	
+	//Special Crates Enabled
+	if(GetConfigVar<bool>("SPECIAL_CRATE_ENABLED", true)){
+		
+		foreach(IObject obj in objects.Where(x => x.Name == "SupplyCrate00")){
+			Game.CreateObject("XmasPresent00",obj.GetWorldPosition());
+			obj.Remove();
+			//Right Type
+/*			if(obj is IObjectSupplyCrate){
+				WeaponItem item = (obj as IObjectSupplyCrate).GetWeaponItem();
+
+				//Correct Category
+				if(	item == WeaponItem.BOUNCINGAMMO 	|| 
+					item == WeaponItem.FIREAMMO 		|| 
+					item == WeaponItem.STRENGTHBOOST 	|| 
+					item == WeaponItem.SPEEDBOOST 		|| 
+					item == WeaponItem.SLOWMO_5 		|| 
+					item == WeaponItem.SLOWMO_10 		|| 
+					item == WeaponItem.C4				||
+					item == WeaponItem.GRENADES			||
+					item == WeaponItem.SHURIKEN			||
+					item == WeaponItem.MOLOTOVS			||
+					item == WeaponItem.MINES			||
+					item == WeaponItem.PILLS			||
+					item == WeaponItem.MEDKIT
+				){
+
+					//Check drop chance
+					if(rnd.Next(0, 101) <= GetConfigVar<int>("SPECIAL_CRATE_DROP_RATE", 25)){
+						CreateAmmoCrate(obj.GetWorldPosition());
+						obj.Remove();
+					}
+				}
+			}*/
+		}
+	}
+}
+
+public static void OnProjectileCreated(IProjectile[] projectiles){
+	
+	//Add Projectiles To Tracking
+	foreach(IProjectile pp in projectiles){
+
+		//Find If Default Type Set
+		string Equip = GetConfigVar<string>(GetWeaponName(pp.ProjectileItem) + "_AMMO", "None");
+		
+		//Give New Properties
+		pp.PowerupBounceActive = false;
+		
+		//Created Bullet Object
+		Bullet bul = null;
+		
+		//Get Ammo From Player
+		if(Equip == "None"){
+
+			//Find Shooter
+			gPlayer Source = GetgPlayer(Game.GetPlayer(pp.InitialOwnerPlayerID));
+			
+			//Shot By Player
+			if(Source != null){
+				int WeaponType = (int)pp.ProjectileItem;
+				
+				//From Primary
+				if(WeaponType == (int)Source.Item1.WeaponItem && Source.Primary != null){
+					bul = new Bullet(pp, Source.Primary);
+
+				//From Secondary
+				}else if(WeaponType == (int)Source.Item2.WeaponItem && Source.Secondary != null){
+					bul = new Bullet(pp, Source.Secondary);
+				}
+			}
+			
+		//Get Ammo From Default Type, Owner Must Still Be a Player
+		}else if(Equip != "None"){
+			
+			if(Game.GetPlayer(pp.InitialOwnerPlayerID) != null)
+				bul = new Bullet(pp, GetAmmoByName(Equip));
+		}
+		
+		if(bul != null){
+			bul.Update();
+			BulletList.Add(bul);
+		}
+	}
+}	
+
+public static void OnProjectileHit(IProjectile pp, ProjectileHitArgs args){
+
+	foreach(Bullet b in BulletList){
+
+		//Find Hit Callback
+		if(b.Projectile == pp){
+			b.Hit(args);
+			break;
+		}
+	}
+}
+
+/*
+	Custom Crate Functions
+*/
+public static void CreateAmmoCrate(Vector2 pos){
+	//Crates CustomID
+	string cID = "DISABLED" + Game.TotalElapsedGameTime;
+	
+	//Joint To Hold Custom Crate Together
+	IObjectWeldJoint Welder = (IObjectWeldJoint)Game.CreateObject("WeldJoint", pos);
+	
+	//Invisible Block For Game World Collision
+	IObject Grid = Game.CreateObject("InvisibleBlockNoCollision", pos + new Vector2(-4, 4));
+	Grid.SetSizeFactor(new Point(2, 2));
+	
+	CollisionFilter col = new CollisionFilter();
+	col.CategoryBits = 32;
+	col.MaskBits = 3;
+	col.AboveBits = 0;
+	col.BlockExplosions = false;
+	col.BlockFire = false;
+	col.BlockMelee = false;
+	col.ProjectileHit = false;
+	Grid.SetCollisionFilter(col);
+	
+	//Background Crate Image
+	IObject BG = Game.CreateObject("BgRadar00A", pos, MathHelper.PI);
+
+	//Disable Collision Tile With Crate Objects
+	IObjectAlterCollisionTile Alter = (IObjectAlterCollisionTile)Game.CreateObject("AlterCollisionTile", pos);
+	Alter.SetDisablePlayerMelee(true);
+	Alter.SetDisableProjectileHit(true);
+	Alter.SetDisabledCategoryBits(0xFFFF);
+	Alter.SetDisabledMaskBits(0xFFFF);
+	Alter.SetDisabledAboveBits(0xFFFF);
+
+	//Crate Formation using Turret Crate Pieces
+	for(int i = 0;i < 4;i ++){
+		Vector2 Shift = Vector2.Zero;
+		Shift.X = (float)Math.Cos((MathHelper.PI / 2) * i + MathHelper.PI / 4) * 5.65f;
+		Shift.Y = (float)Math.Sin((MathHelper.PI / 2) * i + MathHelper.PI / 4) * 5.65f;
+		
+		IObject Box = Game.CreateObject("StreetsweeperCratePart", pos + Shift, MathHelper.PI / 2 * i - MathHelper.PI / 2);
+		Box.SetBodyType(BodyType.Static);
+		Box.CustomID = cID;	
+		
+		Welder.AddTargetObject(Box);
+		Alter.AddTargetObject(Box);
+	}
+	
+	//Button Players Interact With To Recieve Custom Ammunition
+	IObjectActivateTrigger Button = (IObjectActivateTrigger)Game.CreateObject("ActivateTrigger", pos);
+	Button.SetHighlightObject(Grid);
+	Button.SetScriptMethod("PickupCustomBullet");
+
+	//Add Crate Pieces To Main Weld
+	Welder.AddTargetObject(Button);			
+	Welder.AddTargetObject(Grid);
+	Welder.AddTargetObject(BG);
+	Welder.AddTargetObject(Alter);
+	
+	//Set CustomID's of Crate Pieces
+	Button.CustomID = cID;
+	Grid.CustomID = cID;
+	BG.CustomID = cID;
+	Welder.CustomID = cID;
+	Alter.CustomID = cID;
+	
+	//Wait a few Secs for Game To Load In Objects Correctly
+	CreateTimer(500, 1, "ValidateAmmoCrate", cID);	
+}
+
+public static void ValidateAmmoCrate(TriggerArgs args){
+
+	//Only ObjectTriggers Will Use This Function
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		//Destroy Unused Timer
+		(args.Caller as IObject).Remove();
+		
+		//Set Each Create Object As Dynamic
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+			obj.SetBodyType(BodyType.Dynamic);
+		}
+	}
+}
+
+public static void PickupCustomBullet(TriggerArgs args){
+	
+	if(args.Sender is IPlayer){
+		bool GotPickuped = PickupCustomBullet(args.Sender as IPlayer, GetRandomAmmo(), true);
+		
+		//Remove Object When Pickup
+		if(GotPickuped && args.Caller is IObject){		
+			IObject Button = args.Caller as IObject;
+			
+			//Destroy Crate
+			foreach(IObject obj in Game.GetObjectsByCustomID(Button.CustomID)){
+				obj.Destroy();
+			}
+		}
+	}
+}
+
+public static bool PickupCustomBullet(IPlayer Player, Ammo Equip, bool ExtraAmmo = false){
+	bool GotPickuped = true;
+	
+	//Find Currently Equiped Item
+	RifleWeaponItem rifle = Player.CurrentPrimaryWeapon;
+	HandgunWeaponItem handgun = Player.CurrentSecondaryWeapon;
+	
+	//Apply To Handgun
+	if(Player.CurrentWeaponDrawn == WeaponItemType.Handgun && GetConfigVar<string>(GetWeaponName(handgun.WeaponItem) + "_AMMO", "None") == "None"){
+		
+		//Validate As Proper Player
+		gPlayer ply = GetgPlayer(Player);
+
+		if(ply != null)
+			ply.GiveSecondaryAmmo(Equip);
+		
+	//Apply To Rifle
+	}else if(Player.CurrentWeaponDrawn == WeaponItemType.Rifle && GetConfigVar<string>(GetWeaponName(rifle.WeaponItem) + "_AMMO", "None") == "None"){	
+
+		//Validate As Proper Player
+		gPlayer ply = GetgPlayer(Player);
+
+		if(ply != null)
+			ply.GivePrimaryAmmo(Equip);
+		
+	}else if(ExtraAmmo){
+		gPlayer ply = GetgPlayer(Player);
+		
+		if(ply != null){
+			//No Items Applied To
+			
+			//Save Ammo For Later
+			if(ply.SavedAmmo < 2)
+				ply.SavedAmmo ++;
+			
+			//Tell Player It Functioned
+			Game.PlayEffect("CFTXT", Player.GetWorldPosition(), "Special Ammo");
+		}else{
+			GotPickuped = false;
+		}
+	}
+
+	return GotPickuped;
+}
+
+/*
+	Classes
+*/
+public class Ammo{
+	public Action<IProjectile> OnUpdate;
+	public Action<IProjectile, ProjectileHitArgs> OnHit;
+	public string Name, Author, Description;
+	
+	public Ammo(Action<IProjectile> f1, Action<IProjectile, ProjectileHitArgs> f2, string _nm, string _at, string _desc){
+		OnUpdate = f1;
+		OnHit = f2;
+		Name = _nm;
+		Author = _at;
+		Description = _desc;
+	}
+};
+
+public class Bullet{
+	public IProjectile Projectile;
+	Ammo Type;
+
+	public Bullet(IProjectile pp, Ammo am){
+		Projectile = pp;
+		Type = am;
+	}
+
+	public void Update(){
+		
+		//Step Callback
+		if(Type.OnUpdate != null){
+			Type.OnUpdate(Projectile);
+		}	
+	}
+
+	public void Hit(ProjectileHitArgs args){
+		
+		//Hit Callback
+		if(Type.OnHit != null){
+			Type.OnHit(Projectile, args);
+		}
+	}
+};
+
+public class dItem{
+	
+	//Track Which Item Was Held and Bullet Type
+	public RifleWeaponItem rifle;
+	public HandgunWeaponItem handgun;
+	public Ammo Type = null;
+	
+	public dItem(RifleWeaponItem i1, Ammo am){
+		rifle = i1;
+		Type = am;
+	}
+	
+	public dItem(HandgunWeaponItem i2, Ammo am){
+		handgun = i2;
+		Type = am;
+	}
+};
+
+public class gPlayer{
+
+	public IPlayer Player;
+	
+	//Custom Bullet Storage
+	public Ammo Primary = null;
+	public Ammo Secondary = null;
+	public int SavedAmmo = 0;
+	
+	//Store Items For Tracking Dropped Items
+	public RifleWeaponItem Item1;
+	public HandgunWeaponItem Item2;
+	
+	public gPlayer(IPlayer ply){
+		Player = ply;
+	}
+	
+	public void Update(){
+
+		/*
+			Find new items picked up
+			and track dropped items.
+			Activated when items not same as stored
+		*/
+		if(Player.CurrentPrimaryWeapon.WeaponItem != Item1.WeaponItem){
+
+			//Not None? Track New Dropped Item If Has Bullet Type and no Default Type
+			if(Item1.WeaponItem != WeaponItem.NONE && Primary != null && GetConfigVar<string>(GetWeaponName(Item1.WeaponItem) + "_AMMO", "None") == "None"){
+				DroppedItems.Add(new dItem(Item1, Primary));
+			}
+	
+			//Early Set Item
+			Item1 = Player.CurrentPrimaryWeapon;
+			Primary = null;
+
+			//Find If Picked Up Weapon Is Dropped Item With Bullet Type
+			for(int i = 0;i < DroppedItems.Count;i ++){
+				dItem item = DroppedItems[i];
+				
+				if(RifleSame(item.rifle, Item1)){
+					Primary = item.Type;
+					DroppedItems.RemoveAt(i);
+					break;
+				}
+			}
+			
+			//Find Default Ammo Type
+			string Equip = GetConfigVar<string>(GetWeaponName(Item1.WeaponItem) + "_AMMO", "None");
+			if(Equip != "None"){
+				Primary = GetAmmoByName(Equip);
+			}
+			
+			if(Item1.WeaponItem != WeaponItem.NONE)
+				BulletInfo(Primary);			
+
+			//Add Custom Ammo If Have Any Saved Up Ammo
+			if(Primary == null){
+				
+				if(Item1.WeaponItem != WeaponItem.NONE){
+					// DobEdit && SavedAmmo > 0
+					if(GivePrimaryAmmo(GetRandomAmmo()))
+						SavedAmmo = 1;
+				}
+			}			
+		}
+		
+		if(Player.CurrentSecondaryWeapon.WeaponItem != Item2.WeaponItem){
+
+			//Not None? Track New Dropped Item If Has Bullet Type and no Default Type
+			if(Item2.WeaponItem != WeaponItem.NONE && Secondary != null && GetConfigVar<string>(GetWeaponName(Item2.WeaponItem) + "_AMMO", "None") == "None"){
+				DroppedItems.Add(new dItem(Item2, Secondary));
+			}
+
+			//Early Set Item
+			Item2 = Player.CurrentSecondaryWeapon;
+			Secondary = null;
+			
+			//Find If Picked Up Weapon Is Dropped Item With Bullet Type
+			for(int i = 0;i < DroppedItems.Count;i ++){
+				dItem item = DroppedItems[i];
+				
+				if(HandgunSame(item.handgun, Item2)){
+					Secondary = item.Type;
+					DroppedItems.RemoveAt(i);
+					break;
+				}
+			}
+			
+			//Find Default Ammo Type
+			string Equip = GetConfigVar<string>(GetWeaponName(Item2.WeaponItem) + "_AMMO", "None");
+			if(Equip != "None"){
+				Secondary = GetAmmoByName(Equip);
+			}
+
+			if(Item2.WeaponItem != WeaponItem.NONE)
+				BulletInfo(Secondary);
+			
+			//Add Custom Ammo If Have Any Saved Up Ammo
+			if(Secondary == null){
+				
+				if(Item2.WeaponItem != WeaponItem.NONE){
+					
+					if(GiveSecondaryAmmo(GetRandomAmmo()))
+						SavedAmmo = 1;
+				}
+			}
+		}
+		
+		/*
+			When Holding No Items or Lacking Bouncy Ammo When No Forced Type Reset Bullet Types
+		*/
+		if(Item1.WeaponItem == WeaponItem.NONE || (Item1.PowerupBouncingRounds == 0 && GetConfigVar<string>(GetWeaponName(Item1.WeaponItem) + "_AMMO", "None") == "None")){
+			Primary = null;
+		}		
+		
+		if(Item2.WeaponItem == WeaponItem.NONE || (Item2.PowerupBouncingRounds == 0 && GetConfigVar<string>(GetWeaponName(Item2.WeaponItem) + "_AMMO", "None") == "None")){
+			Secondary = null;
+		}
+		
+		//Track Weapons
+		Item1 = Player.CurrentPrimaryWeapon;
+		Item2 = Player.CurrentSecondaryWeapon;
+	}
+	
+	/*
+		When Bouncy Ammo Held and Not Already Given Bullet Type and No Forced Type
+	*/
+	public bool GivePrimaryAmmo(Ammo equip){
+
+		if(GetConfigVar<string>(GetWeaponName(Item1.WeaponItem) + "_AMMO", "None") == "None"){				
+				
+			//Find Common Ammo and Mag Size	and if currentammo is smaller		
+			int ammo = (Item1.MagSize < Item1.WeaponMagCapacity) ? Item1.WeaponMagCapacity : Item1.MagSize;
+			int mags = (Item1.SpareMags <= Math.Ceiling(Item1.MaxCarriedSpareMags / 4.0)) ? (int)Math.Ceiling(Item1.MaxCarriedSpareMags / 4.0) : Item1.SpareMags;
+			Player.SetCurrentPrimaryWeaponAmmo(ammo, mags, ProjectilePowerup.Bouncing);						
+
+			Primary = equip;
+			Item1 = Player.CurrentPrimaryWeapon;
+			
+			//Show Player Relevant Info On BulletType
+			Game.PlayEffect("CFTXT", Player.GetWorldPosition(), Primary.Name);
+			BulletInfo(Primary);
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public bool GiveSecondaryAmmo(Ammo equip){
+		
+		if(GetConfigVar<string>(GetWeaponName(Item2.WeaponItem) + "_AMMO", "None") == "None"){
+		
+			//Find Common Ammo and Mag Size	and if currentammo is smaller		
+			int ammo = (Item2.MagSize < Item2.WeaponMagCapacity) ? Item2.WeaponMagCapacity : Item2.MagSize;
+			int mags = (Item2.SpareMags <= Math.Ceiling(Item2.MaxCarriedSpareMags / 4.0)) ? (int)Math.Ceiling(Item2.MaxCarriedSpareMags / 4.0) : Item2.SpareMags;
+			Player.SetCurrentSecondaryWeaponAmmo(ammo, mags, ProjectilePowerup.Bouncing);		
+			
+			Secondary = equip;
+			Item2 = Player.CurrentSecondaryWeapon;
+			
+			//Show Player Relevant Info On BulletType
+			Game.PlayEffect("CFTXT", Player.GetWorldPosition(), Secondary.Name);
+			BulletInfo(Secondary);
+			
+			return true;
+		}
+		
+		return false;
+	}
+	
+	public void BulletInfo(Ammo Ammunition){
+		
+		//Stop Bots In SinglePlayer From Spamming Chat
+		if(!Player.IsBot && Ammunition != null){
+			
+			//Name
+			Game.ShowChatMessage(Ammunition.Name + ":", Color.White, Player.GetUser().UserIdentifier);
+			
+			//Author
+			Game.ShowChatMessage("(" + Ammunition.Author + ")", Player.GetUser().UserIdentifier);
+			
+			//Description
+			Game.ShowChatMessage(Ammunition.Description, Color.Grey, Player.GetUser().UserIdentifier);
+		}
+	}
+};
+
+/*
+	Helper Functions
+	-Oringal Functions
+	-Commonly Used Functions
+*/
+public static int GetAmmo(string c_args){
+	int BulletID = -1;
+	
+	if(!Int32.TryParse(c_args, out BulletID)){
+		BulletID = -1;
+		
+		if(c_args.ToUpper() != "NONE"){
+			
+			for(int i = 0;i < AmmoTypes.Length;i ++){
+				Ammo am = AmmoTypes[i];								
+
+				if(am.Name.ToUpper().Split(' ')[0] == c_args.ToUpper()){
+					BulletID = i;
+					break;
+				}
+			}
+			
+		}else{
+			BulletID = AmmoTypes.Length;
+		}
+	}
+	
+	return BulletID;
+}
+
+public static int GetPlayer(string c_args){
+	IUser ret = null;
+	
+	foreach(IUser user in Game.GetActiveUsers()){
+		
+		if(user.Name.ToUpper() == c_args.ToUpper()){
+			ret = user;
+			break;
+		}
+	}
+	
+	if(ret == null){
+		int id = 0;
+		
+		if(Int32.TryParse(c_args, out id)){
+			
+			foreach(IUser user in Game.GetActiveUsers()){
+				
+				if(user.GameSlotIndex == id){
+					ret = user;
+					break;
+				}
+			}
+		}
+	}
+	
+	return (ret != null && ret.GetPlayer() != null) ? ret.GetPlayer().UniqueID : -1;
+}
+
+public static string GetWeaponName(ProjectileItem WeaponID){
+	return GetWeaponName((int)WeaponID);
+}
+
+public static string GetWeaponName(WeaponItem WeaponID){
+	return GetWeaponName((int)WeaponID);
+}
+
+public static string GetWeaponName(int WeaponID){
+	string Name = "NONE";
+
+	if(WeaponID > 0 && WeaponID.ToString() != ((ProjectileItem)WeaponID).ToString()){
+		
+		switch((ProjectileItem)WeaponID){
+			
+			case ProjectileItem.SUB_MACHINEGUN:{
+				Name = "TOMMYGUN";
+				break;
+			}
+			
+			default: {
+				Name = ((ProjectileItem)WeaponID).ToString();
+				break;
+			}
+		}
+	}
+	return Name.ToUpper();
+}
+
+public static int GetWeapon(string c_args){
+	int WeaponID = -1;
+	
+	//Try Parse Else Find By String Name
+	if(!Int32.TryParse(c_args, out WeaponID)){
+		WeaponID = -1;
+		
+		foreach(ProjectileItem item in ProjectileItems){		
+			
+			if(c_args.ToUpper() == GetWeaponName((int)item)){
+				WeaponID = (int)item;
+				break;			
+			}
+		}
+	}else{
+		
+		if(GetWeaponName(WeaponID) == "NONE"){
+			WeaponID = -1;
+		}
+	}	
+	
+	return WeaponID;
+}
+
+public static Ammo GetRandomAmmo(){
+	List<Ammo> AmmoList = AmmoTypes.ToList();
+	string[] Disabled = GetConfigVar<string[]>("DISABLED_AMMOS", new string[]{""});
+	
+	foreach(string am in Disabled){
+		
+		int index = AmmoList.FindIndex(x => x.Name == am);
+		
+		if(index >= 0){
+			AmmoList.RemoveAt(index);
+		}
+	}
+	
+	if(AmmoList.Count > 0){
+		//return AmmoList[rnd.Next(0, AmmoList.Count)];
+		return AmmoList[12];
+	}else{
+		return null;
+	}
+}
+
+public static Ammo GetAmmoByName(string Name){
+	
+	foreach(Ammo am in AmmoTypes){
+	
+		if(am.Name == Name)
+			return am;
+	}
+	return null;
+}
+
+public static bool RifleSame(RifleWeaponItem r1, RifleWeaponItem r2){
+	return (r1.CurrentAmmo == r2.CurrentAmmo && r1.MagSize == r2.MagSize && r1.WeaponItem == r2.WeaponItem && r1.PowerupBouncingRounds == r2.PowerupBouncingRounds && r1.TotalAmmo == r2.TotalAmmo);
+}
+
+public static bool HandgunSame(HandgunWeaponItem r1, HandgunWeaponItem r2){
+	return (r1.CurrentAmmo == r2.CurrentAmmo && r1.MagSize == r2.MagSize && r1.WeaponItem == r2.WeaponItem && r1.PowerupBouncingRounds == r2.PowerupBouncingRounds && r1.TotalAmmo == r2.TotalAmmo);
+}
+
+public static gPlayer GetgPlayer(IPlayer ply){
+	gPlayer ret = null;
+	
+	foreach(gPlayer o in PlayerList){
+		
+		if(o.Player == ply){
+			ret = o;
+			break;
+		}
+	}
+	
+	return ret;
+}
+
+public static void CreateTimer(int interval, int count, string method, string id) {
+    IObjectTimerTrigger timerTrigger = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger"); 
+    timerTrigger.SetIntervalTime(interval);
+    timerTrigger.SetRepeatCount(count);
+    timerTrigger.SetScriptMethod(method);
+    timerTrigger.CustomId = id;
+    timerTrigger.Trigger();
+}
+
+public static T GetConfigVar<T>(string Var, object Default){
+	Object ret = null;
+
+	//Non Null
+	if(ConfigFile != null){
+		
+		if(ConfigFile.ContainsKey(Var))
+			ret = ConfigFile.GetItem(Var);
+		
+		//Non Found? Set To Default
+		if(ret == null && Default != null){
+			SetConfigVar<T>(Var, Default);
+			return (T)Default;
+		}
+		
+		//Config Not Open
+	}else{
+		return (T)Default;
+	}
+	
+	//Return Found or Not Found Data
+	return (T)ret;
+}
+
+public static void SetConfigVar<T>(string Var, object Value){
+
+	//Non Null
+	if(ConfigFile != null && Value != null){	
+
+		if(Value is string)
+			ConfigFile.SetItem(Var, (string)Value);		
+		
+		if(Value is string[])
+			ConfigFile.SetItem(Var, (string[])Value);
+		
+		if(Value is int)
+			ConfigFile.SetItem(Var, (int)Value);		
+		
+		if(Value is int[])
+			ConfigFile.SetItem(Var, (int[])Value);		
+				
+		if(Value is bool)
+			ConfigFile.SetItem(Var, (bool)Value);
+
+		if(Value is bool[])
+			ConfigFile.SetItem(Var, (bool[])Value);		
+		
+		if(Value is float)
+			ConfigFile.SetItem(Var, (float)Value);		
+		
+		if(Value is float[])
+			ConfigFile.SetItem(Var, (float[])Value);
+	}
+}
+
+/*
+	User Defined Bullets and Functions
+*/
+
+/*
+	Circles
+	Danger Ross
+*/
+public static void circlesUpdate(IProjectile pro){
+	double angle = Math.Atan2(pro.Direction.X, pro.Direction.Y) + (Math.PI/14);
+	Vector2 result = new Vector2((float)Math.Sin(angle), (float)Math.Cos(angle));
+	pro.Direction = result;
+}
+
+/*
+	Chain Shots
+	Ebomb09
+*/
+public static void chainOnHit(IProjectile pp, ProjectileHitArgs args){
+	IPlayer src = Game.GetPlayer(pp.InitialOwnerPlayerID);	
+
+	if(args.IsPlayer && src != null){
+		IPlayer hit = Game.GetPlayer(args.HitObjectID);
+		IPlayer Next = null;
+		float dist = -1;		
+
+		foreach(IPlayer ply in Game.GetPlayers()){
+			
+			if(!ply.IsDead && ply != src && ply != hit && (src.GetTeam() == PlayerTeam.Independent || ply.GetTeam() != src.GetTeam())){
+				float temp = Vector2.Distance(ply.GetWorldPosition(), pp.Position);
+
+				if(dist == -1 || temp < dist){
+					dist = temp;			
+					Next = ply;
+				}
+			}
+		}
+		
+		if(Next != null){
+			Vector2 Pos = Next.GetWorldPosition() + new Vector2(0, 12);
+			double Angle = Math.Atan2(Pos.Y - pp.Position.Y, Pos.X - pp.Position.X );
+			Vector2 Direction = new Vector2((float)Math.Cos(Angle), (float)Math.Sin(Angle));
+			Game.SpawnProjectile(pp.ProjectileItem, pp.Position + Direction * 16, Direction);
+		}
+	}
+}
+
+/*
+	Explosive Bullets
+	exsceses
+*/
+public static void explosivebulletHit(IProjectile projectile, ProjectileHitArgs args){
+	var HitPos = args.HitPosition;
+
+	if(projectile.ProjectileItem == ProjectileItem.BAZOOKA || projectile.ProjectileItem == ProjectileItem.GRENADE_LAUNCHER){
+	Game.TriggerExplosion(HitPos + new Vector2(16, 0));
+	Game.PlayEffect("EXP", HitPos + new Vector2(0, 24));
+	Game.TriggerExplosion(HitPos + new Vector2(-16, 0));
+
+	int n = 0;
+	while(n++ < 30)Game.PlayEffect("PLRB", HitPos + new Vector2(rnd.Next(-24, 24), rnd.Next(-8, 24)));
+	}
+	if(projectile.ProjectileItem != ProjectileItem.BAZOOKA && projectile.ProjectileItem != ProjectileItem.GRENADE_LAUNCHER){
+	Game.PlayEffect("S_P", HitPos);
+	Game.PlayEffect("STM", HitPos);
+	Game.PlaySound("Break", HitPos);
+
+		
+	Area boom = new Area (HitPos.Y+16f, HitPos.X - 16f, HitPos.Y - 16f, HitPos.X + 16f);
+	foreach (IObject obj in Game.GetObjectsByArea(boom)){
+	if(obj is IPlayer){
+	obj.SetHealth(obj.GetHealth() - (projectile.GetProperties().PlayerDamage * 2 / (HitPos-obj.GetWorldPosition()).Length()));}
+	}
+	}
+}
+
+/*
+	Floaties
+	Danger Ross
+*/
+public static void floatiesUpdate(IProjectile pro){
+	
+	if(pro.TotalDistanceTraveled > 16){
+		pro.Direction = new Vector2(-(pro.Direction.X), -(pro.Direction.Y));
+		pro.Velocity /= 10;
+	}
+}
+
+/*
+	Healing Darts
+	KiPeH + Ebomb09
+*/
+public static void healingdartUpdate(IProjectile pp){
+	pp.DamageDealtModifier = 0;
+}
+
+public static void healingdartHit(IProjectile pp, ProjectileHitArgs args){
+	IPlayer src = Game.GetPlayer(args.HitObjectID);	
+
+	if(src != null){
+		
+		PlayerModifiers mods = src.GetModifiers();
+		mods.CurrentHealth += pp.GetProperties().ObjectDamage;
+		src.SetModifiers(mods);
+	}
+}
+
+/*
+	Heavy Slug
+	motto
+*/
+public static List<IProjectile> Used_Projectiles = new List<IProjectile>();
+
+public static void heavySlugUpdate(IProjectile p){
+	
+	if (!Used_Projectiles.Contains(p))
+	{
+		Used_Projectiles.Add(p);
+		p.CritChanceDealtModifier *= 2;
+		p.DamageDealtModifier *= 2;
+		var v = p.Velocity;
+		v /= v.Length();
+		p.Velocity = v * 600;
+	}
+	p.Direction += new Vector2(0, -0.0005f * Time * Game.SlowmotionModifier);
+}
+
+/*
+	Hollow Points
+	exsceses
+*/
+public static void hollowPointHit(IProjectile pp, ProjectileHitArgs args){
+	
+	if(Game.GetSingleObjectByCustomID("TIMER_BLEEDER") == null)
+		CreateTimer(500, 0, "BLEED", "TIMER_BLEEDER");
+	
+	var Obj_ID = args.HitObjectID;
+
+	var obj = Game.GetObject(Obj_ID);
+	if(obj is IPlayer && !obj.CustomId.Contains("Bleeder")){
+	((IPlayer)obj).CustomId = "Bleeder/" + (Game.TotalElapsedGameTime + (3000f));
+	}
+	if(obj is IPlayer && obj.CustomId.Contains("Bleeder")){
+	((IPlayer)obj).CustomId = "Bleeder/" + (float.Parse(((IPlayer)obj).CustomId.Split('/')[1]) + 1250f);
+	Game.PlayEffect("HIT_S", obj.GetWorldPosition());
+	//Game.PlayEffect("CFTXT",obj.GetWorldPosition(), obj.CustomId);
+	}
+}
+
+public static void BLEED(TriggerArgs args){
+	
+	foreach(IPlayer ply in Game.GetPlayers()){
+		
+		if(!ply.IsDead && ply.CustomId.Contains("Bleeder/") && Game.TotalElapsedGameTime < float.Parse(ply.CustomId.Split('/')[1])){
+			ply.SetHealth(ply.GetHealth() - 1f);
+			Game.PlaySound("ImpactFlesh", ply.GetWorldPosition());
+			Game.PlayEffect("TR_B",ply.GetWorldPosition());
+
+			if(rnd.Next(5) == 1) Game.PlayEffect("BLD",ply.GetWorldPosition());
+		}
+		
+		if(!ply.IsDead && ply.CustomId.Contains("Bleeder/") && Game.TotalElapsedGameTime > float.Parse(ply.CustomId.Split('/')[1])){
+			Game.PlayEffect("CFTXT", ply.GetWorldPosition() + new Vector2(0, 20), "I AIN'T GOT TIME TO BLEED!");
+			ply.CustomId = "";
+		}
+	}
+}
+
+/*
+	Homing
+	Danger Ross 
+	*edit By Ebomb09
+*/
+public static void homingUpdate(IProjectile pp){
+	IPlayer Source = Game.GetPlayer(pp.InitialOwnerPlayerID);
+	
+	if(Source != null){
+		double Angle = Math.Atan2(pp.Direction.Y, pp.Direction.X);
+		double Minimum = MathHelper.PI / 180 * 10 * Game.SlowmotionModifier;
+		IPlayer Target = null;
+		float Dist = -1;
+		
+		foreach(IPlayer ply in Game.GetPlayers()){
+			float r_Distance = Vector2.Distance(Source.GetWorldPosition(), ply.GetWorldPosition());
+			
+			if(ply != Source && !ply.IsDead && (ply.GetTeam() != Source.GetTeam() || Source.GetTeam() == PlayerTeam.Independent) && ((r_Distance < Dist) || Dist == -1)){
+				Dist = r_Distance;
+				Target = ply;
+			}
+		}
+		
+		if(Target != null){
+			double d_Angle = Math.Atan2(Target.GetWorldPosition().Y - pp.Position.Y, Target.GetWorldPosition().X - pp.Position.X);
+			
+			double a = Angle - d_Angle;
+			double b = Angle - d_Angle + MathHelper.PI * 2;
+			double c = Angle - d_Angle - MathHelper.PI * 2;
+
+			double d = 0;
+			if(Math.Abs(a) < Math.Abs(b) && Math.Abs(a) < Math.Abs(c)){
+				d = a;
+			}else if(Math.Abs(b) < Math.Abs(a) && Math.Abs(b) < Math.Abs(c)){
+				d = b;
+			}else{
+				d = c;
+			}
+			
+			if(d > 0){
+				Angle -= Minimum;
+			}else if(d < 0){
+				Angle += Minimum;
+			}
+
+			pp.Direction = new Vector2((float)Math.Cos(Angle), (float)Math.Sin(Angle));
+		}
+	}
+}
+
+/*
+	Hypnotic Ammo
+	Ebomb09
+*/
+public static void hypnoticammoHit(IProjectile pp, ProjectileHitArgs args){
+	IPlayer src = Game.GetPlayer(pp.InitialOwnerPlayerID);	
+	IPlayer tar = Game.GetPlayer(args.HitObjectID);
+
+	if(src != null && tar != null){
+		int chance = rnd.Next(0, 100);
+		
+		if((src.GetTeam() != tar.GetTeam() || src.GetTeam() == PlayerTeam.Independent) && chance <= 25){
+			PlayerTeam sel = (src.GetTeam() == PlayerTeam.Independent) ? GetEmptyTeam() : src.GetTeam();
+			tar.SetTeam(sel);
+			src.SetTeam(sel);
+			
+			IObjectOnPlayerDeathTrigger trig = (IObjectOnPlayerDeathTrigger)Game.CreateObject("OnPlayerDeathTrigger");
+			trig.SetPlayerSource(tar);
+			trig.SetScriptMethod("RemoveFromTeam");
+		}
+	}
+}
+
+public static void RemoveFromTeam(TriggerArgs args){
+	
+	if(args.Caller is IObjectOnPlayerDeathTrigger){
+		IObjectOnPlayerDeathTrigger trig = args.Caller as IObjectOnPlayerDeathTrigger;
+		IPlayer tar = trig.GetPlayerSource();
+		
+		if(tar != null){
+			PlayerTeam Team = tar.GetTeam();			
+			IPlayer[] TeamPlayers = Game.GetPlayers().Where(x => x.GetTeam() == Team && !x.IsDead).ToArray();
+			
+			if(TeamPlayers.Length == 1)
+				TeamPlayers[0].SetTeam(PlayerTeam.Independent);
+		}
+		trig.Remove();
+	}	
+}
+
+public static PlayerTeam GetEmptyTeam(){
+	List<PlayerTeam> Teams = new List<PlayerTeam>(){
+		PlayerTeam.Team1,
+		PlayerTeam.Team2,
+		PlayerTeam.Team3,
+		PlayerTeam.Team4
+	};
+	
+	foreach(IPlayer ply in Game.GetPlayers().Where(x => !x.IsDead)){
+		
+		if(Teams.Contains(ply.GetTeam())){
+			Teams.Remove(ply.GetTeam());			
+		}
+	}
+	
+	if(Teams.Count >= 1){
+		return Teams[rnd.Next(0, Teams.Count)];
+	}
+	return PlayerTeam.Independent;
+}
+
+/*
+	Wavy
+	Danger Ross
+*/
+public static void wavyUpdate(IProjectile pro){
+	double angle = Math.Atan2(pro.Direction.X, pro.Direction.Y) + ( (rnd.Next(-2,3))*(Math.PI/85));
+	Vector2 result = new Vector2((float)Math.Sin(angle), (float)Math.Cos(angle));
+	pro.Velocity = pro.Direction*500f;
+	pro.Direction = result;	
+}
+
+/*
+	Wisp Ammo
+	Ebomb09
+*/
+public static void wispUpdate(IProjectile pp){
+	double Angle = Math.Atan2(pp.Direction.Y, pp.Direction.X);
+	Angle += Math.Cos(pp.TotalDistanceTraveled * MathHelper.PI / 32) / 32 * Game.SlowmotionModifier;
+	pp.Direction = new Vector2((float)Math.Cos(Angle), (float)Math.Sin(Angle));
+	pp.Velocity *= 0.85f;
+	Game.PlayEffect("GLM", pp.Position);	
+}
+
+/*
+	Life Steal
+	Tomo
+*/
+public static void lifestealHit(IProjectile pp, ProjectileHitArgs args){
+	
+	if(args.IsPlayer){
+		IPlayer ply = Game.GetPlayer( args.HitObjectID );
+        IPlayer shootingply = Game.GetPlayer( pp.InitialOwnerPlayerID );
+		PlayerModifiers plymodify = ply.GetModifiers();
+		PlayerModifiers shootingplymodify = shootingply.GetModifiers();
+
+		if (!ply.IsDead && shootingply.GetHealth() != 100){
+			shootingplymodify.CurrentHealth += args.Damage;
+			ply.SetModifiers( plymodify );
+			shootingply.SetModifiers( shootingplymodify );
+		}
+    }
+}
+
+/*
+	Bot Bullet
+	Dev
+*/
+public static Dictionary<int, IObject> m_botBullets = new Dictionary<int, IObject>();
+public static Events.ObjectTerminatedCallback m_botBulletTerminated = null;
+
+public static void botBulletTerminated(IObject[] objs){
+	foreach (var obj in objs)
+	{
+		if (m_botBullets.ContainsKey(obj.UniqueID))
+		{
+			var customBullet = m_botBullets[obj.UniqueID];
+			var position = customBullet.GetWorldPosition();
+
+			{
+				PunchBot(position);
+			}
+
+
+			m_botBullets.Remove(obj.UniqueID);
+		}
+	}
+}
+
+public static void botbulletUpdate(IProjectile projectile){
+	
+	if(m_botBulletTerminated == null)
+		m_botBulletTerminated = Events.ObjectTerminatedCallback.Start(botBulletTerminated);
+	
+	var customBullet = Game.CreateObject("DrinkingGlass00",
+		worldPosition: projectile.Position,
+		angle: (float)Math.Atan2(projectile.Direction.X, projectile.Direction.Y),
+		linearVelocity: projectile.Velocity / 50 + new Vector2(0, 3),
+		angularVelocity: 50f * (int)(projectile.Direction.X % 1),
+		faceDirection: (int)(projectile.Direction.X % 1)
+		);
+
+	customBullet.TrackAsMissile(true);
+	m_botBullets.Add(customBullet.UniqueID, customBullet);
+	projectile.FlagForRemoval();
+}
+
+public static void PunchBot(Vector2 position)
+{
+	var player = Game.CreatePlayer(position);
+
+	player.SetModifiers(new PlayerModifiers()
+	{
+		MaxHealth = 200,
+		CurrentHealth = 200,
+		ExplosionDamageTakenModifier = 0.5f,
+		MeleeForceModifier = 1.5f,
+		SizeModifier = 1.1f,
+		InfiniteAmmo = 1,
+	});
+	player.SetProfile(new IProfile()
+	{
+		Name = "Punch Bot",
+		ChestOver = new IProfileClothingItem("SuitJacketBlack","ClothingDarkGray"),
+		ChestUnder = new IProfileClothingItem("ShirtWithTie","ClothingWhite", "ClothingRed"),
+		Feet = new IProfileClothingItem("BootsBlack","ClothingGray"),
+		Gender = Gender.Male,
+		Legs = new IProfileClothingItem("Pants","ClothingGray"),
+		Skin = new IProfileClothingItem("Normal","Skin4"),
+	});
+	player.SetBotName("Punch Bot");
+
+	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.BotD));
+	player.SetBotBehaviorActive(true);
+	player.CustomId = "botBullet" + Game.TotalElapsedGameTime;
+	player.SetTeam(PlayerTeam.Independent);
+		
+		CreateTimer(1500, 1, "KillBot", "botBullet" + Game.TotalElapsedGameTime);
+		IObjectTimerTrigger timer = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger");
+		timer.SetIntervalTime(1500);
+		timer.SetRepeatCount(1);
+		timer.SetScriptMethod("KillBot");
+		timer.Trigger();
+
+}
+
+public static void KillBot(TriggerArgs args){
+	
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+			obj.Remove();
+		}		
+	}
+}
+
+/*
+	PresentDay
+	NearHuscarl
+*/
+public static Dictionary<int, IObject> m_presentdayBullets = new Dictionary<int, IObject>();
+public static Events.ObjectTerminatedCallback m_presentdayTerminated = null;
+public static readonly List<string> m_presents = new List<string>(){
+	"XmasPresent00",
+	"WpnPistol",
+	"WpnPistol45",
+	"WpnSilencedPistol",
+	"WpnMachinePistol",
+	"WpnMagnum",
+	"WpnRevolver",
+	"WpnPumpShotgun",
+	"WpnDarkShotgun",
+	"WpnTommygun",
+	"WpnSMG",
+	"WpnM60",
+	"WpnPipeWrench",
+	"WpnChain",
+	"WpnWhip",
+	"WpnHammer",
+	"WpnKatana",
+	"WpnMachete",
+	"WpnChainsaw",
+	"WpnKnife",
+	"WpnSawedoff",
+	"WpnBat",
+	"WpnBaton",
+	"WpnShockBaton",
+	"WpnLeadPipe",
+	"WpnUzi",
+	"WpnSilencedUzi",
+	"WpnBazooka",
+	"WpnAxe",
+	"WpnAssaultRifle",
+	"WpnMP50",
+	"WpnSniperRifle",
+	"WpnCarbine",
+	"WpnFlamethrower",
+	"ItemPills",
+	"ItemMedkit",
+	"ItemSlomo5",
+	"ItemSlomo10",
+	"ItemStrengthBoost",
+	"ItemSpeedBoost",
+	"ItemLaserSight",
+	"ItemBouncingAmmo",
+	"ItemFireAmmo",
+	"WpnGrenades",
+	"WpnMolotovs",
+	"WpnMines",
+	"WpnShuriken",
+	"WpnBow",
+	"WpnFlareGun",
+	"WpnGrenadeLauncher",
+	"Baseball",
+	"FlagpoleUS",
+	"WpnGrenades",
+	"WpnMolotovs",
+	"WpnC4",
+	"WpnShuriken",
+	"WpnMines",
+};
+public static readonly List<string> m_oofs = new List<string>(){
+	"WpnGrenadesThrown",
+	"WpnMolotovsThrown",
+	"WpnMineThrown",
+};
+
+
+public static T GetItem<T>(List<T> list){
+	var rndIndex = rnd.Next(list.Count);
+	return list[rndIndex];
+}
+
+public static void presentdayTerminated(IObject[] objs){
+	foreach (var obj in objs)
+	{
+		if (m_presentdayBullets.ContainsKey(obj.UniqueID))
+		{
+			var customBullet = m_presentdayBullets[obj.UniqueID];
+			var position = customBullet.GetWorldPosition();
+
+			// normally, the present spawn some random shits upon destroyed. make the present disappeared
+			// and spawn something else as a workaround
+			customBullet.SetWorldPosition(new Vector2(-5000, 5000));
+
+			var rndNum = rnd.Next(0, 3000);
+
+			if (rndNum < 1) // biggest oof
+			{	
+				Game.CreateObject("CargoContainer01A",position);
+			}
+			if (1 <= rndNum && rndNum < 10) {
+				SpawnElf(position);
+			}
+			if (10 <= rndNum && rndNum < 15) {
+				SpawnBadSanta(position);
+			}
+			if (15 <= rndNum && rndNum < 100)
+			{
+				Game.CreateObject(GetItem(m_oofs), position);
+			}
+			if (100 <= rndNum && rndNum < 800)
+			{
+				Game.CreateObject(GetItem(m_presents), position);
+			}
+
+			m_presentdayBullets.Remove(obj.UniqueID);
+			
+		} else if (obj.Name.Equals("XmasPresent00")) {
+			var position = obj.GetWorldPosition();
+			var rndNum = rnd.Next(0, 3000);
+			
+			obj.SetWorldPosition(new Vector2(-5000,5000));
+			if (rndNum < 1) // big oof
+			{	
+				Game.CreateObject("CargoContainer01A",position);
+			}
+			if (1 <= rndNum && rndNum < 20) {
+				SpawnElf(position);
+			}
+			if (20 <= rndNum && rndNum < 30) {
+				SpawnBadSanta(position);
+			}
+			if (30 <= rndNum && rndNum < 300)
+			{
+				Game.CreateObject(GetItem(m_oofs), position);
+			}
+			if (300 <= rndNum && rndNum < 2000)
+			{
+				Game.CreateObject(GetItem(m_presents), position);
+			}
+		}
+	}
+}    
+
+public static void presentdayUpdate(IProjectile projectile){
+	
+	if(m_presentdayTerminated == null)
+		m_presentdayTerminated = Events.ObjectTerminatedCallback.Start(presentdayTerminated);
+	
+	var src = Game.GetPlayer(projectile.InitialOwnerPlayerID);
+	
+	var customBullet = Game.CreateObject("XmasPresent00",
+		worldPosition: projectile.Position,
+		angle: (float)Math.Atan2(projectile.Direction.X, projectile.Direction.Y),
+		linearVelocity: projectile.Velocity / 50 + new Vector2(0, 3),
+		angularVelocity: 50f * (int)(projectile.Direction.X % 1),
+		faceDirection: (int)(projectile.Direction.X % 1)
+		);
+
+	if(src != null){
+
+		while(src.GetAABB().Intersects(customBullet.GetAABB()))
+			customBullet.SetWorldPosition(customBullet.GetWorldPosition() + projectile.Direction);		
+	}
+
+	customBullet.SetCollisionFilter(new CollisionFilter(){
+		AboveBits = 8,
+		CategoryBits = 16,
+		MaskBits = 3,
+		BlockMelee = true,
+		BlockExplosions = true,
+		BlockFire = true,
+		ProjectileHit = true,
+	});
+
+	CreateTimer(10, 1, "presentdayMissile", "" + customBullet.UniqueID);
+
+	m_presentdayBullets.Add(customBullet.UniqueID, customBullet);
+	projectile.FlagForRemoval();
+}
+
+public static void presentdayMissile(TriggerArgs args){
+	
+	if(args.Caller is IObject){
+		string oID = (args.Caller as IObject).CustomID;
+		int id = 0;
+		
+		if(Int32.TryParse(oID, out id)){
+			IObject obj = Game.GetObject(id);
+			
+			if(obj != null)
+				obj.TrackAsMissile(true);
+		}
+		
+		(args.Caller as IObject).Remove();
+	}
+}
+
+public static void SpawnBadSanta(Vector2 position){
+	var player = Game.CreatePlayer(position);
+
+	player.SetModifiers(new PlayerModifiers()
+	{
+		MaxHealth = 200,
+		CurrentHealth = 200,
+		ExplosionDamageTakenModifier = 0.5f,
+		MeleeForceModifier = 1.5f,
+		SizeModifier = 1.1f,
+		InfiniteAmmo = 1,
+	});
+	player.SetProfile(new IProfile()
+	{
+		Name = "Bad Santa",
+		Accesory = new IProfileClothingItem("SantaMask", "ClothingLightGray", "ClothingLightGray", ""),
+		ChestOver = new IProfileClothingItem("Coat", "ClothingRed", "ClothingLightGray", ""),
+		ChestUnder = new IProfileClothingItem("SleevelessShirt", "ClothingLightGray", "ClothingLightGray", ""),
+		Feet = new IProfileClothingItem("BootsBlack", "ClothingBrown", "ClothingLightGray", ""),
+		Gender = Gender.Male,
+		Hands = new IProfileClothingItem("SafetyGlovesBlack", "ClothingGray", "ClothingLightGray", ""),
+		Head = new IProfileClothingItem("SantaHat", "ClothingRed", "ClothingLightGray", ""),
+		Legs = new IProfileClothingItem("Pants", "ClothingRed", "ClothingLightGray", ""),
+		Skin = new IProfileClothingItem("Tattoos", "Skin3", "ClothingPink", ""),
+		Waist = new IProfileClothingItem("Belt", "ClothingDarkRed", "ClothingLightYellow", ""),
+	});
+	player.SetBotName("Bad Santa");
+
+	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.ChallengeA));
+	player.SetBotBehaviorActive(true);
+
+	player.SetTeam(PlayerTeam.Independent);
+
+	player.GiveWeaponItem(WeaponItem.KNIFE);
+	player.GiveWeaponItem(WeaponItem.M60);
+	player.GiveWeaponItem(WeaponItem.UZI);
+
+	Game.CreateDialogue("Ho ho ho!", new Color(128, 32, 32), player);
+}
+
+public static void SpawnElf(Vector2 position) {
+	var player = Game.CreatePlayer(position);
+
+	player.SetModifiers(new PlayerModifiers()
+	{
+		MaxHealth = 100,
+		CurrentHealth = 100,
+		ExplosionDamageTakenModifier = 0.5f,
+		SizeModifier = 0.5f,
+		EnergyConsumptionModifier = 0,
+		SprintSpeedModifier = 2,
+	});
+	player.SetProfile(new IProfile()
+	{
+		Name = "Elf",
+		Accesory = new IProfileClothingItem("Scarf", "ClothingYellow", "", ""),
+		ChestOver = new IProfileClothingItem("Robe", "ClothingDarkGreen", "", ""),
+		ChestUnder = new IProfileClothingItem("None", "ClothingLightGray", "ClothingLightGray", ""),
+		Feet = new IProfileClothingItem("ShoesBlack", "ClothingDarkGreen", "", ""),
+		Gender = Gender.Male,
+		Hands = new IProfileClothingItem("FingerlessGloves", "ClothingLightGray", "", ""),
+		Head = new IProfileClothingItem("SantaHat", "ClothingDarkGreen", "ClothingLightGray", ""),
+		Legs = new IProfileClothingItem("Pants", "ClothingYellow", "ClothingLightGray", ""),
+		Skin = new IProfileClothingItem("Tattoos", "Skin3", "ClothingPink", ""),
+		Waist = new IProfileClothingItem("Belt", "ClothingBlack", "ClothingLightYellow", ""),
+	});
+	player.SetBotName("Elf");
+
+	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.ChallengeA));
+	player.SetBotBehaviorActive(true);
+
+	player.SetTeam(PlayerTeam.Independent);
+
+	player.GiveWeaponItem(WeaponItem.KATANA);
+
+	Game.CreateDialogue("The Elf on the Shelf judges, and you have been found wanting", new Color(128, 32, 32), player);
+}
+
+/*
+	Slomo Bullets
+	tilt56
+*/
+public static void slomoUpdate(IProjectile ppp){
+	var vel = ppp.Velocity;
+	vel /= vel.Length();
+	ppp.Velocity = vel * 1;
+	ppp.Direction = ppp.Direction*0f;
+}
+
+/*
+	Telebullets
+	motto
+*/
+public static void teleHit(IProjectile projectile, ProjectileHitArgs args)
+{
+	IPlayer p = Game.GetPlayer(projectile.OwnerPlayerID);
+	
+	if(p != null && args.RemoveFlag)
+		p.SetWorldPosition(args.HitPosition);
+}
+
+/*
+	Balloon Bullets
+	motto
+*/
+public static void balloonHit(IProjectile projectile, ProjectileHitArgs args)
+{
+
+	if(Game.GetSingleObjectByCustomID("__BALLOONRAILJOINT__") == null){
+		var r = (IObjectRailJoint)Game.CreateObject("RailJoint", new Vector2(-200, 1000f));
+		var t = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint", new Vector2(200, 1000));
+		r.SetTargetObjectJoint(t);
+		r.CustomID = "__BALLOONRAILJOINT__";
+	}
+
+	if(args.IsPlayer)
+	{
+		var vict = Game.GetPlayer(args.HitObjectID);
+	if (Game.GetSingleObjectByCustomId(vict.Name + "Thingy") == null)
+		{
+			CreateBalloon(vict, true);
+			var tim = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger");
+			tim.CustomID = vict.UniqueId + "";
+			tim.SetScriptMethod("Balun");
+			tim.SetIntervalTime(3000);
+			tim.Trigger();
+		}
+	}
+}
+
+public static void Balun(TriggerArgs args)
+{
+	var p = Game.GetPlayer(int.Parse((args.Caller as IObject).CustomID));
+	if (p != null && !p.IsRemoved)
+		CreateBalloon(p, false);
+}
+
+public static void CreateBalloon(IPlayer dude, bool Create)
+{
+	var r = Game.GetSingleObjectByCustomID("__BALLOONRAILJOINT__");
+	
+	if (Create && r != null)
+	{
+		var dist = (IObjectDistanceJoint)Game.CreateObject("DistanceJoint", dude.GetWorldPosition() + new Vector2(0, 16));
+		var targ = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint", dude.GetWorldPosition() + new Vector2(0, 80));
+		IObject bloon;
+
+		bloon = Game.CreateObject("Balloon00", targ.GetWorldPosition() + new Vector2(0, 8));
+		var pull = (IObjectPullJoint)Game.CreateObject("PullJoint", new Vector2(dude.GetWorldPosition().X, 1000f));
+		var t2 = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint", bloon.GetWorldPosition());
+		var a = (IObjectRailAttachmentJoint)Game.CreateObject("RailAttachmentJoint", pull.GetWorldPosition());
+
+		pull.SetBodyType(BodyType.Dynamic);
+		pull.SetTargetObject(a);
+		pull.SetTargetObjectJoint(t2);
+		pull.SetForce(0.3f);
+		t2.SetTargetObject(bloon);
+		a.SetRailJoint((IObjectRailJoint)r);
+		a.SetTargetObject(pull);
+		bloon.SetMass(0.002f);
+
+		dist.SetLineVisual(LineVisual.DJRope);
+		dist.SetTargetObjectJoint(targ);
+		dist.SetTargetObject(dude);
+		dist.SetLengthType(DistanceJointLengthType.Elastic);
+		dist.CustomId = dude.Name + "Thingy";
+
+		targ.SetTargetObject(bloon);
+		targ.CustomId = dude.Name + "Thingy";
+
+		targ.SetWorldPosition(targ.GetWorldPosition() + new Vector2(0, -70));
+		bloon.SetWorldPosition(bloon.GetWorldPosition() + new Vector2(0, -70));
+	}
+	else
+	{
+		foreach (IObject ob in Game.GetObjectsByCustomId(dude.Name + "Thingy"))
+			ob.Destroy();
+	}
+}
+
+/*
+	Gloo Bullets
+*/
+public static void glooHit(IProjectile pp, ProjectileHitArgs args){
+	IObject obj = null;
+
+	if(args.IsPlayer){
+		obj = Game.GetPlayer(args.HitObjectID);
+	}else{
+		obj = Game.GetObject(args.HitObjectID);
+	}
+
+	if(obj != null){
+		
+		if(obj.GetBodyType() == BodyType.Dynamic){
+			obj.SetHealth(obj.GetHealth() + args.Damage);
+			
+			IObjectTargetObjectJoint trgJoint = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint", obj.GetWorldPosition());
+			trgJoint.SetTargetObject(obj);
+			trgJoint.CustomID = "__GLOO_" + Game.TotalElapsedGameTime + "__";
+			
+			int cycle = rnd.Next(5, 10);
+			for(int i = 0;i < cycle;i ++){		
+				float angle = MathHelper.TwoPI * (i / (float)cycle);
+				Vector2 Direction = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));		
+				IObjectDistanceJoint distJoint = (IObjectDistanceJoint)Game.CreateObject("DistanceJoint", obj.GetWorldPosition() + Direction * rnd.Next(4, 16));
+				distJoint.SetTargetObjectJoint(trgJoint);
+				distJoint.SetLengthType(DistanceJointLengthType.Elastic);
+				distJoint.SetLineVisual(LineVisual.DJVine);
+				distJoint.CustomID = "__GLOO_" + Game.TotalElapsedGameTime + "__";
+			}
+			
+			CreateTimer(1000, 1, "RemoveGloo", "__GLOO_" + Game.TotalElapsedGameTime + "__");
+			Game.PlaySound("BulletHitFlesh", pp.Position);
+		}
+	}
+}
+
+public static void RemoveGloo(TriggerArgs args){
+
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		Game.PlaySound("BulletHitFlesh", (args.Caller as IObject).GetWorldPosition());
+		
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+			
+			obj.Destroy();
+		}	
+	}
+}
+
+/*
+	Grapple Shots
+*/
+public static void grappleHit(IProjectile pp, ProjectileHitArgs args){	
+	IObject obj = null;
+	IPlayer ply = null;
+
+	if(args.IsPlayer){
+		obj = Game.GetPlayer(args.HitObjectID);
+	}else{
+		obj = Game.GetObject(args.HitObjectID);
+	}
+	ply = Game.GetPlayer(pp.InitialOwnerPlayerID);
+	
+	if(obj != null && ply != null && args.RemoveFlag){		
+		IObjectTargetObjectJoint trgJoint = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint", ply.GetWorldPosition());
+		trgJoint.SetTargetObject(ply);
+		trgJoint.CustomID = "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__";	
+	
+		IObjectPullJoint pullJoint = (IObjectPullJoint)Game.CreateObject("PullJoint", pp.Position);
+		pullJoint.SetTargetObject(obj);
+		pullJoint.SetTargetObjectJoint(trgJoint);
+		pullJoint.SetForce(0.5f);
+		pullJoint.SetLineVisual(LineVisual.DJRope);
+		pullJoint.CustomID = "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__";		
+		
+		CreateTimer(1500, 1, "RemoveGrapple", "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__");
+	}
+}
+
+public static void RemoveGrapple(TriggerArgs args){
+
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		Game.PlaySound("FlakCannon", (args.Caller as IObject).GetWorldPosition());
+		
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+			
+			obj.Destroy();
+		}	
+	}
+}
+
+/*
+	Weapon Bullets
+	Ebomb09
+*/
+public static int WeaponBulletsNum = 0;
+
+public static void weaponUpdate(IProjectile pp){
+
+	//Divide Parts of Name
+	string[] ProjectileName = pp.ProjectileItem.ToString().Split('_');
+	
+	//Form Valid Object Name
+	string WeaponName = "Wpn";
+	foreach(string name in ProjectileName){
+		WeaponName += name[0] + name.Substring(1, name.Length - 1).ToLower();
+	}
+
+	//Exceptions
+	switch(pp.ProjectileItem){
+		
+		case ProjectileItem.SHOTGUN:
+			WeaponName = "WpnPumpShotgun";
+		break;		
+		
+		case ProjectileItem.SNIPER:
+			WeaponName = "WpnSniperRifle";
+		break;		
+		
+		case ProjectileItem.ASSAULT:
+			WeaponName = "WpnAssaultRifle";
+		break;		
+		
+		case ProjectileItem.SUB_MACHINEGUN:
+			WeaponName = "WpnTommygun";
+		break;		
+	}
+	
+	//Create Object Properties
+	float angle = (float)Math.Atan2(pp.Velocity.Y, pp.Velocity.X);
+	IPlayer src = Game.GetPlayer(pp.InitialOwnerPlayerID);
+	Vector2 pos = pp.Position;
+	
+	IObject item = Game.CreateObject(WeaponName, pos, angle, pp.Direction * 15, (float)Math.Cos(angle) * -20);
+	item.CustomID = "__WEAPON_AMMO_" + WeaponBulletsNum + "__";
+
+	//Move Pos of Gun Until Not Colliding With Player
+	if(src != null){
+		
+		while(src.GetAABB().Intersects(item.GetAABB()))
+			item.SetWorldPosition(item.GetWorldPosition() + pp.Direction);		
+	}
+	CreateTimer(10, 1, "WeaponMissile", "__WEAPON_AMMO_" + WeaponBulletsNum + "__");
+	
+	WeaponBulletsNum ++;
+	
+	//Remove Initial Projectile
+	pp.FlagForRemoval();
+}
+
+public static void WeaponMissile(TriggerArgs args){
+	
+	if(args.Caller is IObject){
+		//Find Custom ID
+		string cID = (args.Caller as IObject).CustomID;
+		
+		//Clear Old Timer
+		(args.Caller as IObject).CustomID = "";
+		(args.Caller as IObject).Remove();
+		
+		//Get Weapon Item
+		IObject item = Game.GetSingleObjectByCustomID(cID);
+	
+		//Still Exists?
+		if(item != null){
+			
+			//Timer Control of Object
+			CreateTimer(10, 0, "CheckFireWeapon", cID);
+			CreateTimer(250, 0, "ProceedFireWeapon", cID);
+		}
+	}
+}
+
+public static void CheckFireWeapon(TriggerArgs args){
+	
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		//Find Weapon Still Exists
+		bool found = false;
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+
+			if(obj is IObjectWeaponItem){			
+				obj.TrackAsMissile(false);
+				bool IsInPlayer = false;
+				
+				foreach(IPlayer ply in Game.GetPlayers())
+				{
+
+					if(!ply.IsDead && obj.GetAABB().Intersects(ply.GetAABB())){
+						IsInPlayer = true;
+						
+						Game.PlaySound("MeleeHitBlunt", ply.GetWorldPosition());
+						
+						PlayerModifiers mods = ply.GetModifiers();						
+						float health = mods.CurrentHealth;
+						health -= 5;
+						
+						if(health < 0){
+							ply.Kill();
+						}else{
+							mods.CurrentHealth = health;
+						}
+						
+						ply.SetModifiers(mods);
+					}
+				}
+				
+				//Not Colliding With Player
+				if(!IsInPlayer && ((Math.Abs(obj.GetLinearVelocity().X) > 1) || Math.Abs(obj.GetLinearVelocity().Y) > 1 || Math.Abs(obj.GetAngularVelocity()) > 1)){
+					found = true;
+				}
+				break;
+			}
+		}
+		
+		//Delete All Objects Associated
+		if(!found){
+			
+			foreach(IObject obj in Game.GetObjectsByCustomID(cID)){				
+				obj.Destroy();
+			}
+		}
+	}
+}
+
+public static void ProceedFireWeapon(TriggerArgs args){
+	
+	if(args.Caller is IObject){
+		string cID = (args.Caller as IObject).CustomID;
+		
+		//Find Weapon Item Object
+		foreach(IObject obj in Game.GetObjectsByCustomID(cID)){
+			
+			if(obj is IObjectWeaponItem){
+				IObjectWeaponItem wpn = obj as IObjectWeaponItem;
+				
+				//Projectile Properties
+				float angle = obj.GetAngle();
+				Vector2 Direction = new Vector2((float)Math.Cos(angle), (float)Math.Sin(angle));
+				
+				Game.SpawnProjectile((ProjectileItem)wpn.WeaponItem, obj.GetWorldPosition(), Direction * obj.GetFaceDirection());
+			}
+		}
+	}
+}
+
+/*
+	Electric Bullet
+	NearHuscarl
+*/
+public class StunnedPlayer
+{
+	public static readonly float StunnedTime = 3000f;
+	private IPlayer m_player;
+
+	public int UniqueID
+	{
+		get { return m_player.UniqueID; }
+	}
+
+	private bool isStunned;
+	public bool IsStunned
+	{
+		get
+		{
+			return isStunned;
+		}
+		private set
+		{
+			isStunned = value;
+			if (isStunned)
+			{
+				m_player.SetInputEnabled(false);
+				m_player.AddCommand(new PlayerCommand(PlayerCommandType.DeathKneelInfinite));
+			}
+			else
+			{
+				m_player.AddCommand(new PlayerCommand(PlayerCommandType.StopDeathKneel));
+				m_player.SetInputEnabled(true);
+			}
+		}
+	}
+
+	public StunnedPlayer(IPlayer player) : this(player, player.GetWorldPosition())
+	{
+	}
+
+	public StunnedPlayer(IPlayer player, Vector2 hitPosition)
+	{
+		m_player = player;
+		IsStunned = true;
+
+		Game.PlayEffect(EffectName.Electric, hitPosition);
+	}
+
+	private float m_stunnedTimer = 0;
+	private float m_stunnedEffectTimer = 0;
+	public void Update(float dt)
+	{
+		if (IsStunned)
+		{
+			m_stunnedTimer += dt;
+			m_stunnedEffectTimer += dt;
+
+			if (m_stunnedEffectTimer >= 400)
+			{
+				var position = m_player.GetWorldPosition();
+				position.X += rnd.Next(-10, 10);
+				position.Y += rnd.Next(-10, 10);
+
+				Game.PlayEffect(EffectName.Electric, position);
+				m_stunnedEffectTimer = 0;
+			}
+
+			if (m_stunnedTimer >= StunnedTime)
+			{
+				IsStunned = false;
+			}
+		}
+	}
+}
+
+public static Dictionary<int, IProjectile> m_customBullets = new Dictionary<int, IProjectile>();
+public static Dictionary<int, StunnedPlayer> m_stunnedPlayers = new Dictionary<int, StunnedPlayer>();
+
+public static void electricUpdate(IProjectile projectile)
+{
+	if(m_electricUpdateEvent == null)
+		m_electricUpdateEvent = Events.UpdateCallback.Start(electricUpdateEvent);
+	
+	ToEMPBullet(projectile);
+}
+
+public static void electricHit(IProjectile projectile, ProjectileHitArgs args)
+{
+	
+	if (m_customBullets.ContainsKey(projectile.InstanceID))
+	{
+		var rndNum = rnd.Next(0, 100);
+		if (rndNum < 1)
+		{
+			ElectrocuteRange(args.HitPosition);
+		}
+		if (1 <= rndNum && rndNum < 21)
+		{
+			var obj = Game.GetObject(args.HitObjectID);
+			Electrocute(args);
+		}
+
+		m_customBullets.Remove(projectile.InstanceID);
+	}
+}
+
+public static Vector2? m_empBlastCenter = null;
+public static readonly float EMPBlastRadius = 15f;
+public static float m_stunnedRangeTimer = 0f;
+public static void ElectrocuteRange(Vector2 position)
+{
+	foreach (var player in Game.GetPlayers())
+	{
+		if (IsTouchingCircle(player.GetAABB(), position, EMPBlastRadius) && CanBeStunned(player))
+		{
+			Game.PlayEffect(EffectName.CustomFloatText, player.GetWorldPosition(), "stunned");
+			m_stunnedPlayers.Add(player.UniqueID, new StunnedPlayer(player));
+		}
+	}
+
+	for (var i = 0; i < 360; i += 72) // Play electric effect 5 times in circle (360 / 5 = 72)
+	{
+		var degree = i;
+		var radianAngle = degree * Math.PI / 180.0f;
+
+		var direction = new Vector2()
+		{
+			X = (float)Math.Cos(radianAngle),
+			Y = (float)Math.Sin(radianAngle),
+		};
+
+		Game.PlayEffect(EffectName.Electric, position + direction * EMPBlastRadius);
+	}
+
+	m_empBlastCenter = position;
+}
+
+public static void Electrocute(ProjectileHitArgs args)
+{
+	var position = args.HitPosition;
+
+	if (args.IsPlayer)
+	{
+		var player = (IPlayer)Game.GetObject(args.HitObjectID);
+
+		if (CanBeStunned(player))
+		{
+			Game.PlayEffect(EffectName.CustomFloatText, position, "stunned");
+			m_stunnedPlayers.Add(player.UniqueID, new StunnedPlayer(player, position));
+		}
+	}
+}
+
+public static bool CanBeStunned(IPlayer player)
+{
+	return !player.IsRemoved && !player.IsDead && !m_stunnedPlayers.ContainsKey(player.UniqueID);
+}
+
+public static Events.UpdateCallback m_electricUpdateEvent = null;
+public static void electricUpdateEvent(float dt)
+{
+	UpdatePlayers(dt);
+
+	m_stunnedRangeTimer += dt;
+	if (m_stunnedRangeTimer >= StunnedPlayer.StunnedTime)
+	{
+		m_stunnedRangeTimer = 0;
+		m_empBlastCenter = null;
+	}
+	if (m_empBlastCenter != null)
+		Game.DrawCircle((Vector2)m_empBlastCenter, EMPBlastRadius, Color.Red);
+}
+
+public static void UpdatePlayers(float dt)
+{
+	foreach (var player in m_stunnedPlayers.Values.ToList())
+	{
+		player.Update(dt);
+
+		if (!player.IsStunned)
+		{
+			m_stunnedPlayers.Remove(player.UniqueID);
+		}
+	}
+}
+
+public static void ToEMPBullet(IProjectile projectile)
+{
+	if (!m_customBullets.ContainsKey(projectile.InstanceID))
+	{
+		m_customBullets.Add(projectile.InstanceID, projectile);
+	}
+}
+
+public static bool IsTouchingCircle(Area area, Vector2 center, float radius)
+{
+	var lines = new List<Vector2[]>()
+	{
+		new Vector2[] { area.BottomRight, area.BottomLeft },
+		new Vector2[] { area.BottomLeft, area.TopLeft },
+		new Vector2[] { area.TopLeft, area.TopRight },
+		new Vector2[] { area.TopRight, area.BottomRight },
+	};
+
+	var minDistanceToCenter = float.MaxValue;
+
+	foreach (var line in lines)
+	{
+		var distanceToCenter = FindDistanceToSegment(center, line[0], line[1]);
+		if (distanceToCenter < minDistanceToCenter) minDistanceToCenter = distanceToCenter;
+	}
+
+	return minDistanceToCenter <= radius;
+}
+
+// https://stackoverflow.com/a/1501725/9449426
+public static float FindDistanceToSegment(Vector2 point, Vector2 p1, Vector2 p2)
+{
+	// Return minimum distance between line segment vw and point point
+	var lengthSquare = (float)(Math.Pow(p2.X - p1.X, 2) + Math.Pow(p2.Y - p1.Y, 2));  // i.e. |p2-p1|^2 -  avoid a sqrt
+	if (lengthSquare == 0.0) return Vector2.Distance(point, p1);   // p1 == p2 case
+	// Consider the line extending the segment, parameterized as p1 + t (p2 - p1).
+	// We find projection of point point onto the line. 
+	// It falls where t = [(point-p1) . (p2-p1)] / |p2-p1|^2
+	// We clamp t from [0,1] to handle points outside the segment vw.
+	var t = MathHelper.Clamp(Vector2.Dot(point - p1, p2 - p1) / lengthSquare, 0, 1);
+	var projection = p1 + t * (p2 - p1);  // Projection falls on the segment
+	return Vector2.Distance(point, projection);
+}
+
+/*
+	Dragons Breath
+	motto
+*/
+public static List<int> DragonBreath = new List<int>();
+public static List<int> DragonUpdated = new List<int>();
+public static Events.UpdateCallback m_dragonBreathUpdate = null;
+
+public static void dragonCreate(IProjectile p){
+	
+	if(Game.GetSingleObjectByCustomID("__DRAGON_BREATH_TIMER__") == null)
+		CreateTimer(20, 0, "Effects", "__DRAGON_BREATH_TIMER__");
+	
+	if(m_dragonBreathUpdate == null)
+		m_dragonBreathUpdate = Events.UpdateCallback.Start(dragonUpdate);
+	
+	DragonUpdated.Add(p.InstanceID);
+	Game.PlaySound("SawedOff", Vector2.Zero);
+}
+
+public static void dragonUpdate(float e)
+{
+	DragonBreath = DragonUpdated;
+	DragonUpdated = new List<int>();
+	
+	foreach (int pID in DragonBreath)
+	{
+		IProjectile p = Game.GetProjectile(pID);
+		
+		if(p != null){
+			
+			if(!p.PowerupFireActive)
+				Ignite(p);
+				
+			
+			if (p.TotalDistanceTraveled > 300 && !p.IsRemoved)
+			{
+				p.FlagForRemoval();
+				Game.SpawnFireNode(p.Position, p.Direction * 8);
+			}		
+			
+			if(!p.IsRemoved)
+				DragonUpdated.Add(pID);
+		}
+	}
+}
+
+public static void Ignite(IProjectile p)
+{
+
+	float multi = 3;
+	float crit = 0.01f;
+	switch (p.ProjectileItem)
+	{
+		case(ProjectileItem.REVOLVER):
+			multi = 5;
+			break;
+		case(ProjectileItem.SNIPER):
+		case(ProjectileItem.MAGNUM):
+			multi = 8;
+			break;
+		case(ProjectileItem.SHOTGUN):
+		case(ProjectileItem.DARK_SHOTGUN):
+		case(ProjectileItem.SAWED_OFF):
+			multi = 2f;
+			break;
+		case(ProjectileItem.GRENADE_LAUNCHER):
+		case(ProjectileItem.BAZOOKA):
+			multi = 15;
+			crit = 0.2f;
+			break;				
+	}
+	
+	for (int i = 0; i < multi; i++)
+	{
+		var pro = Game.SpawnProjectile(ProjectileItem.SILENCEDUZI, p.Position, p.Direction + new Vector2(rnd.Next(-10, 10) / 100f, rnd.Next(-10, 10) / 100f));
+		pro.DamageDealtModifier *= 0.1f;
+		pro.CritChanceDealtModifier *= crit;
+		DragonUpdated.Add(pro.InstanceID);
+		pro.PowerupFireActive = true;
+	}
+	
+	p.FlagForRemoval();
+}
+
+public static void Effects(TriggerArgs args)
+{
+	
+	foreach (int pID in DragonBreath)
+	{
+		IProjectile p = Game.GetProjectile(pID);
+		
+		if(p != null){
+			
+			if (rnd.Next(100) > 90)
+				Game.PlayEffect("S_P", p.Position);
+			p.Direction = p.Direction + new Vector2(rnd.Next(-100, 100) / 700f, rnd.Next(-100, 100) / 700f);
+		}
+	}
+}
+
+/*
+	Round Bullets
+	Quinterball
+*/
+public static void roundCreate(IProjectile p){
+	string s = "Baseball";
+	if (p.ProjectileItem == ProjectileItem.BAZOOKA || p.ProjectileItem == ProjectileItem.GRENADE_LAUNCHER)
+		s = "Carwheel00";
+	var b = Game.CreateObject(s);
+	b.SetWorldPosition(s == "Baseball" ? p.Position : p.Position + p.Direction * 4);
+	b.SetLinearVelocity(p.Direction * 8);
+	b.TrackAsMissile(true);
+	b.SetHealth(1);
+	//Just in case removal fails, move the bullet away from the ball
+	p.Position = new Vector2(0, Game.GetWorldBottom());
+	p.FlagForRemoval();
+}
+
+/*
+	Dome Bullets
+	tilt56
+*/
+public static void domeHit(IProjectile ppp, ProjectileHitArgs args) 
+{
+	IObject obj = null;
+
+	if(args.IsPlayer)
+	{
+		obj = Game.GetPlayer(args.HitObjectID);
+	}
+
+	if(obj != null)
+	{
+		//bottom 
+		var plat1 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-16, -24));
+		var plat2 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-8, -24));
+		var plat3 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(0, -24));
+		var plat4 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(8, -24));
+		var plat5 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(16, -24));
+		plat1.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat2.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat3.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat4.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat5.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		//corners
+		var plat6 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(20, -20));
+		var plat7 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-20, -20));
+		var plat8 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(20, 20));
+		var plat9 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-20, 20));
+		plat6.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat7.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat8.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat9.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		//right
+		var plat10 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(24, -16));
+		var plat11 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(24, -8));
+		var plat12 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(24, 0));
+		var plat13 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(24, 8));
+		var plat14 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(24, 16));
+		plat10.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat11.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat12.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat13.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat14.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		//left
+		var plat15 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-24, -16));
+		var plat16 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-24, -8));
+		var plat17 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-24, 0));
+		var plat18 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-24, 8));
+		var plat19 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-24, 16));
+		plat15.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat16.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat17.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat18.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat19.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		//top 
+		var plat20 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-16, 24));
+		var plat21 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(-8, 24));
+		var plat22 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(0, 24));
+		var plat23 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(8, 24));
+		var plat24 = Game.CreateObject("Adobe00E", ppp.Position + new Vector2(16, 24));
+		plat20.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat21.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat22.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat23.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat24.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		//background 
+		var plat25 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-16, -16));
+		var plat26 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-8, -16));
+		var plat27 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(0, -16));
+		var plat28 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(8, -16));
+		var plat29 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(16, -16));
+		plat25.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat26.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat27.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat28.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat29.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+
+		var plat30 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-16, -8));
+		var plat31 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-8, -8));
+		var plat32 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(0, -8));
+		var plat33 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(8, -8));
+		var plat34 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(16, -8));
+		plat30.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat31.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat32.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat33.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat34.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		var plat35 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-16, 0));
+		var plat36 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-8, 0));
+		var plat37 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(0, 0));
+		var plat38 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(8, 0));
+		var plat39 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(16, 0));
+		plat35.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat36.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat37.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat38.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat39.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		var plat40 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-16, 8));
+		var plat41 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-8, 8));
+		var plat42 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(0, 8));
+		var plat43 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(8, 8));
+		var plat44 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(16, 8));
+		plat40.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat41.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat42.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat43.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat44.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		var plat45 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-16, 16));
+		var plat46 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(-8, 16));
+		var plat47 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(0, 16));
+		var plat48 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(8, 16));
+		var plat49 = Game.CreateObject("BgAdobe00E", ppp.Position + new Vector2(16, 16));
+		plat45.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat46.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat47.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat48.CustomID = "plat" + Game.TotalElapsedGameTime;
+		plat49.CustomID = "plat" + Game.TotalElapsedGameTime;
+
+		CreateTimer(rnd.Next(1000,2000), 1,"pop", "plat" + Game.TotalElapsedGameTime);
+
+		ppp.FlagForRemoval();
+	}
+}
+
+public static void pop(TriggerArgs args){
+
+	if(args.Caller is IObject){
+		string oof = (args.Caller as IObject).CustomID;
+				
+		foreach(IObject obj in Game.GetObjectsByCustomID(oof)){
+			Game.PlaySound("PlayerJump", new Vector2(0,0), 100);
+			obj.Remove();
+		}	
+	}
+}
+
+/*
+	Laser Bullets
+	Motto73
+*/
+public static void laserCreate(IProjectile p)
+{
+	//Create Laser
+	var dir = p.Direction;
+	dir.Normalize();
+	var pos = p.Position;
+	var pos2 = pos + dir * 500;
+	IObject t = null;
+	RayCastInput input = new RayCastInput(true) { ProjectileHit = RayCastFilterMode.True, AbsorbProjectile = RayCastFilterMode.True };
+	RayCastResult[] rays = Game.RayCast(pos, pos2, input);
+	if (rays.Length > 0)
+	{
+		if (rays[0].Hit)
+		{
+			pos2 = rays[0].Position;
+			t = rays[0].HitObject;
+		}
+	}
+	if (t != null)
+	{
+		t.SetMaxFire();
+		t.SetLinearVelocity(t.GetLinearVelocity() + dir * 4);
+		if (t is IPlayer)
+		if (t is IPlayer)
+			t.SetWorldPosition(t.GetWorldPosition() + new Vector2(0, 2));
+		t.DealDamage(GetBulletDamage(p.ProjectileItem));
+		Game.SpawnFireNode(pos2, dir);
+	}
+	//Draw trail
+	int count = (int)Vector2.Distance(pos, pos2);
+	for (int i = 0; i < count; i++)
+	{
+		var pp = pos + ((pos2 - pos) / count) * i;
+		Game.PlayEffect("TR_B", pp);
+		Game.PlayEffect("GLM", pp);
+		if (p.ProjectileItem == ProjectileItem.BAZOOKA || p.ProjectileItem == ProjectileItem.GRENADE_LAUNCHER)
+		{
+			Game.PlayEffect("GLM", pp + new Vector2(0, 1));
+			Game.PlayEffect("GLM", pp + new Vector2(0, -1));
+		}
+	}
+	Game.PlayEffect("Electric", pos);
+	p.FlagForRemoval();
+}
+public static float GetBulletDamage(ProjectileItem i)
+{
+	float dmg = 10;
+	switch (i)
+	{
+		case ProjectileItem.ASSAULT:
+			dmg = 12;
+			break;
+		case ProjectileItem.BAZOOKA:
+		case ProjectileItem.GRENADE_LAUNCHER:
+			dmg = 80;
+			break;
+		case ProjectileItem.BOW:
+			dmg = 40;
+			break;
+		case ProjectileItem.CARBINE:
+			dmg = 15;
+			break;
+		case ProjectileItem.DARK_SHOTGUN:
+			dmg = 5;
+			break;
+		case ProjectileItem.FLAREGUN:
+			dmg = 25;
+			break;
+		case ProjectileItem.M60:
+			dmg = 12;
+			break;
+		case ProjectileItem.MACHINE_PISTOL:
+			dmg = 10;
+			break;
+		case ProjectileItem.MAGNUM:
+			dmg = 20;
+			break;
+		case ProjectileItem.MP50:
+			dmg = 12;
+			break;
+		case ProjectileItem.PISTOL:
+			dmg = 10;
+			break;
+		case ProjectileItem.PISTOL45:
+			dmg = 10;
+			break;
+		case ProjectileItem.REVOLVER:
+			dmg = 16;
+			break;
+		case ProjectileItem.SAWED_OFF:
+			dmg = 6;
+			break;
+		case ProjectileItem.SHOTGUN:
+			dmg = 5;
+			break;
+		case ProjectileItem.SILENCEDPISTOL:
+			dmg = 5;
+			break;
+		case ProjectileItem.SILENCEDUZI:
+			dmg = 5;
+			break;
+		case ProjectileItem.SMG:
+			dmg = 8;
+			break;
+		case ProjectileItem.SNIPER:
+			dmg = 35;
+			break;
+		case ProjectileItem.TOMMYGUN:
+			dmg = 10;
+			break;
+		case ProjectileItem.UZI:
+			dmg = 8;
+			break;
+
+	}
+	return dmg;
+}

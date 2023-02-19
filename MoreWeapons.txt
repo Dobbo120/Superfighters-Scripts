@@ -1,0 +1,71 @@
+public static Random rand = new Random();
+
+public void AfterStartup() {
+	Events.UpdateCallback.Start(MoreWeapons,1000);
+	Events.ObjectTerminatedCallback.Start(GiveSupplies);
+}
+
+public static List<WeaponItem> newWeapons = new List<WeaponItem>() {
+	(WeaponItem)70,
+	(WeaponItem)92,
+	(WeaponItem)94,
+	(WeaponItem)96,
+	(WeaponItem)97,
+	(WeaponItem)98,
+	(WeaponItem)99,
+	(WeaponItem)108,
+	(WeaponItem)109,
+	(WeaponItem)110,
+	(WeaponItem)111,
+
+};
+
+public static T GetItem<T>(List<T> list) {
+	var rndIndex = rand.Next(list.Count);
+	return list[rndIndex];
+}
+
+public void MoreWeapons(float e) {
+	IObjectSupplyCrate[] crates = Game.GetObjects<IObjectSupplyCrate>();
+	foreach (IObjectSupplyCrate i in crates) {
+		if (!i.CustomID.Equals("DealtWith")) {
+			if (i.GetWeaponItem().Equals((WeaponItem)86)) {
+				i.SetWeaponItem(GetItem(newWeapons));
+			}
+			if (rand.Next(20) == 0) {
+				i.SetWeaponItem(GetItem(newWeapons));
+			}
+			i.CustomID = "DealtWith";
+		}
+	}
+}
+
+public void GiveSupplies(IObject[] o) {
+	
+	foreach (IObject i in o) {
+		Game.WriteToConsole(i.Name);
+		if (i.Name.Equals("SupplyCrate00")) {
+			IObjectSupplyCrate crate = (IObjectSupplyCrate)i;
+			if (crate.GetWeaponItem().Equals(WeaponItem.NONE)) {
+				var rndIndex = rand.Next(3);
+				switch (rndIndex) {
+					case 0:
+						Game.CreateObject("WpnDemoGL",crate.GetWorldPosition());
+						break;
+					case 1:
+						Game.CreateObject("WpnHW",crate.GetWorldPosition());
+						break;
+					case 2:
+						Game.CreateObject("WpnUH",crate.GetWorldPosition());
+						break;
+					case 3:
+						Game.CreateObject("WpnSL",crate.GetWorldPosition());
+						break;
+					default:
+						break;
+				}
+			}
+			
+		}
+	}
+}

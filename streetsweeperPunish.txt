@@ -1,0 +1,31 @@
+public void OnStartup() {
+	Events.UpdateCallback.Start(StreetsweeperPunish, 0, 0);
+	//Events.UserMessageCallbackArgs(StreetsweeperPunishHealth);
+}
+float ssDMG = 25f;
+public void StreetsweeperPunish(float elapsed) {
+	IObjectStreetsweeperCrate[] sweepers = Game.GetObjects<IObjectStreetsweeperCrate>();
+	for (int i = 0; i < sweepers.Length; i++)  {
+		if (sweepers[i].IsActivatedAndOpening) {
+			IPlayer sweppy = sweepers[i].GetOwnerPlayer();
+			PlayerModifiers noEXP = sweppy.GetModifiers();
+			noEXP.ExplosionDamageTakenModifier = 0;
+			if (noEXP.CurrentHealth > ssDMG) {
+				noEXP.CurrentHealth = noEXP.CurrentHealth - ssDMG;
+			} else {
+				noEXP.CurrentHealth = 0;
+			}
+			sweppy.SetModifiers(noEXP);
+			Game.TriggerExplosion(sweppy.GetWorldPosition());
+			noEXP.ExplosionDamageTakenModifier = -2;
+			sweppy.SetModifiers(noEXP);
+		}
+	}
+	
+}
+
+//public void StreetsweeperPunishHealth(UserMessageCallbackArgs args) {
+	//if (args.IsCommand && args.Command == "SSPdmg") {
+		//ssDMG = float.Parse(args.CommandArguments);
+	//}
+//}

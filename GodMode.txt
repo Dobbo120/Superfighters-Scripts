@@ -1,0 +1,75 @@
+public void OnStartup() {
+	Events.UpdateCallback.Start(StartGodTransform, 6400,1);
+	Events.UpdateCallback.Start(StartGodShrink, 7300,1);
+	Events.UpdateCallback.Start(GodMode, 10000, 1);
+}
+
+public void StartGodTransform(float elapsed) {
+	Events.UpdateCallback.Start(GodTransform, 900, 3);
+	IPlayer[] players = Game.GetPlayers();
+	Random random = new Random();
+	IPlayer godlyDude = players[random.Next(players.Length)];
+	godlyDude.CustomID = "GODMODE";
+	
+}
+
+public void StartGodShrink(float e) {
+	Events.UpdateCallback.Start(GodShrink,900,2);
+}
+
+public void GodTransform(float elapsed) {
+	IPlayer godlyDude = Game.GetFirstObject<IPlayer>("GODMODE");
+	PlayerModifiers big = new PlayerModifiers();
+	big.SizeModifier = 2;
+	godlyDude.SetModifiers(big);
+	
+}
+
+public void GodShrink(float e) {
+	IPlayer godlyDude = Game.GetFirstObject<IPlayer>("GODMODE");
+	PlayerModifiers small = new PlayerModifiers();
+	small.SizeModifier = 1;
+	godlyDude.SetModifiers(small);
+}
+
+public void GodMode(float elapsed) {
+	IPlayer[] players = Game.GetPlayers();
+	IPlayer godlyDude = Game.GetFirstObject<IPlayer>("GODMODE");
+	PlayerModifiers god = new PlayerModifiers();
+	god.MaxHealth = 50*players.Length+100;
+	god.MaxEnergy = 100;
+	god.CurrentHealth = god.MaxHealth;
+	god.EnergyConsumptionModifier = 0.9f;
+	god.MeleeDamageDealtModifier = 1.5f;
+	god.MeleeForceModifier = 1.5f;
+	god.RunSpeedModifier = 1.1f;
+	god.ExplosionDamageTakenModifier = 0.9f;
+	god.SprintSpeedModifier = 1.25f;
+	god.SizeModifier = 2;
+	god.EnergyRechargeModifier = 1.5f;
+	Random random = new Random();
+	godlyDude.SetModifiers(god);
+	Events.UpdateCallback.Start(NoRifles, 0, 0);
+	Events.UpdateCallback.Start(GodPowers, 1000, 0);
+}
+
+public void GodPowers(float elapsed) {
+	IPlayer godlyDude = Game.GetFirstObject<IPlayer>("GODMODE");
+	PlayerModifiers godHeal = godlyDude.GetModifiers();
+	if (godlyDude.IsTakingCover != true & godlyDude.IsLedgeGrabbing != true) {
+		godHeal.CurrentHealth = godHeal.CurrentHealth+1f;
+		godlyDude.SetModifiers(godHeal);
+	}
+}
+public void NoRifles(float elapsed) {
+	IPlayer godlyDude = Game.GetFirstObject<IPlayer>("GODMODE");
+	
+	RifleWeaponItem godsGun = godlyDude.CurrentPrimaryWeapon;
+	if (godsGun.WeaponItem != WeaponItem.BAZOOKA & godsGun.WeaponItem != WeaponItem.GRENADE_LAUNCHER) {
+		godlyDude.SetCurrentPrimaryWeaponAmmo(0,0,ProjectilePowerup.None);
+	} else {
+		godlyDude.SetCurrentPrimaryWeaponAmmo(godsGun.CurrentAmmo, ProjectilePowerup.Fire);
+	}
+	godlyDude.SetCurrentSecondaryWeaponAmmo(0,0,ProjectilePowerup.None);
+	
+}

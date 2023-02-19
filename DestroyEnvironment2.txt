@@ -1,0 +1,211 @@
+public static List<Destructable> Destructables = new List<Destructable>();
+public static int MaxSize = 64;
+
+public static Events.ExplosionHitCallback m_explosionHitEvent = null;
+
+public void OnStartup(){
+
+	m_explosionHitEvent = Events.ExplosionHitCallback.Start(OnExplosionHit);
+
+	IObjectTimerTrigger Timer = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger");
+	Timer.SetScriptMethod("Checker");
+	Timer.SetRepeatCount(0);
+	Timer.SetIntervalTime(0);
+	Timer.Trigger();
+}
+
+public void OnExplosionHit(ExplosionData explosion, ExplosionHitArg[] args){
+	
+	foreach(ExplosionHitArg exp in args){
+		IObject obj = exp.HitObject;
+
+		if(obj.CustomID == "" && obj.GetBodyType() == BodyType.Static && !obj.GetColorPaletteName().ToUpper().Contains("BG") && obj.GetColorPaletteName().ToUpper() != "PALNONE" && obj.GetColorPaletteName().ToUpper() != "" && !obj.Name.Contains("Ladder") && !obj.Name.Contains("Water") && !obj.Name.Contains("Acid") && !obj.Name.Contains("Glass") && !obj.Name.Contains("Shadow") && obj.GetType().BaseType.Name == "IObject"){
+			MakeIndividual(obj);
+		}
+	}
+
+	foreach(Destructable o in Destructables){
+		
+		if(Vector2.Distance(explosion.Position, o.GetNode().GetWorldPosition()) <= explosion.Radius){
+			o.GetNode().Destroy();
+		}
+	}
+}
+
+public void MakeIndividual(IObject Object){
+
+	int Width = Object.GetSizeFactor().X;
+	int Height = Object.GetSizeFactor().Y;
+
+	if(Width * Height <= MaxSize && !Important(Object)){
+	
+		if(Width * Height != 1){
+		
+			Vector2 BasePos = Object.GetWorldPosition();
+			string Name = Object.Name;
+			float Angle = Object.GetAngle();
+			Point TileScale = Object.GetBaseSize();
+		
+			for(int x = 0;x < Width;x ++){
+
+				for(int y = 0;y < Height;y ++){
+
+					IObject temp = Game.CreateObject(Name,BasePos + new Vector2( x * (float)Math.Cos(Angle) * TileScale.X , x * (float)Math.Sin(Angle) * TileScale.X ) + new Vector2(y * (float)Math.Cos(Angle - MathHelper.PI / 2) * TileScale.Y , y * (float)Math.Sin(Angle - MathHelper.PI / 2) * TileScale.Y ), Angle, new Vector2(0,0), 0, Object.GetFaceDirection() );
+					
+					CollisionFilter col = Object.GetCollisionFilter();
+					col.CategoryBits = 0x0000;
+					col.MaskBits = 0x0000;
+					col.BlockExplosions = false;
+					temp.SetCollisionFilter(col);		
+
+					temp.SetColor1(Object.GetColor1());
+					temp.SetColor2(Object.GetColor2());
+					temp.SetColor3(Object.GetColor3());
+					temp.SetBodyType(Object.GetBodyType());
+					
+					FindTriggers(Object,temp);
+					
+					Destructables.Add( new Destructable(temp) );
+				}
+
+			}
+
+			Object.Remove();
+		
+		}else{
+			Destructables.Add( new Destructable(Object) );
+		}
+	
+	}
+	
+}
+
+public bool Important(IObject Sender){
+
+	foreach(IObjectOnDestroyedTrigger obj in Game.GetObjectsByName("OnDestroyedTrigger")){
+		if(obj.GetTriggerDestroyObjects().Contains(Sender)){
+			return true;
+		}
+	}
+
+	return false;
+}
+
+public void FindTriggers(IObject Sender, IObject Reciever){
+
+	foreach(IObjectPullJoint obj in Game.GetObjectsByName("PullJoint")){
+		if(obj.GetTargetObject() == Sender){
+			obj.SetTargetObject(Reciever);
+		}
+	}
+	foreach(IObjectRailAttachmentJoint obj in Game.GetObjectsByName("RailAttatchmentJoint")){
+		if(obj.GetTargetObject() == Sender){
+			obj.SetTargetObject(Reciever);
+		}
+	}
+	foreach(IObjectElevatorAttachmentJoint obj in Game.GetObjectsByName("ElevatorAttachmentJoint")){
+		if(obj.GetTargetObject() == Sender){
+			obj.SetTargetObject(Reciever);
+		}
+	}
+	foreach(IObjectAlterCollisionTile obj in Game.GetObjectsByName("AlterCollisionTile")){
+		if(obj.GetTargetObjects().Contains(Sender)){
+			obj.AddTargetObject(Reciever);
+		}
+	}
+	foreach(IObjectDestroyTargets obj in Game.GetObjectsByName("DestroyTargets")){
+		if(obj.GetTriggerDestroyObjects().Contains(Sender)){
+			obj.AddTriggerDestroyObject(Reciever);
+		}
+	}
+	foreach(IObjectDestroyTrigger obj in Game.GetObjectsByName("DestroyTrigger")){
+		if(obj.GetObjectsToDestroy().Contains(Sender)){
+			obj.AddObjectToDestroy(Reciever);
+		}
+	}
+	foreach(IObjectChangeBodyTypeTrigger obj in Game.GetObjectsByName("ChangeBodyTypeTrigger")){
+		if(obj.GetTargetObjects().Contains(Sender)){
+			obj.AddTargetObject(Reciever);
+		}
+	}
+	foreach(IObjectWeldJoint obj in Game.GetObjectsByName("WeldJoint")){
+		if(obj.GetTargetObjects().Contains(Sender)){
+			obj.AddTargetObject(Reciever);
+		}
+	}
+}
+
+public class Destructable{
+
+	public static int Num = 0;
+
+	IObject Object;
+	IObject node;
+	int CountDown = 250;
+	
+	public Destructable(IObject obj){
+		Object = obj;
+
+		Object.CustomID = "Dest" + Num;
+
+		node = Game.CreateObject("DestroyNode",Object.GetWorldPosition());
+
+		IObjectOnDestroyedTrigger Trig = (IObjectOnDestroyedTrigger)Game.CreateObject("OnDestroyedTrigger",Object.GetWorldPosition());
+		Trig.AddTriggerDestroyObject(node);
+		Trig.CustomID = "Dest" + Num;
+		Trig.SetScriptMethod("Destroyed");
+
+		Num ++;
+	}
+
+	public IObject GetNode(){
+		return node;
+	}
+
+	public IObject GetObject(){
+		return Object;
+	}
+
+	public void Step(){
+
+		if(Object.IsBurning){
+			Object.SetBodyType(BodyType.Dynamic);
+			Object.CustomID = "Destroyed";
+		}
+
+		if(Object.GetBodyType() == BodyType.Dynamic){
+
+			if(Object.CustomID == "Destroyed"){
+				if(CountDown != 0){
+					CountDown --;
+				}else{
+					if(Object.GetLinearVelocity().X < 0.1f && Object.GetLinearVelocity().Y < 0.1f && !Object.IsMissile){
+						Object.Destroy();
+					}
+				}
+			}
+			
+		}
+
+	}
+
+}
+
+public void Destroyed(TriggerArgs args){
+	
+	foreach(IObject obj in Game.GetObjectsByCustomID((args.Caller as IObject).CustomID)){
+		obj.SetBodyType(BodyType.Dynamic);
+		obj.SetLinearVelocity(obj.GetLinearVelocity() * 10);
+		obj.TrackAsMissile(true);
+		obj.CustomID = "Destroyed";
+	}
+
+}
+
+public void Checker(TriggerArgs args){
+
+	foreach(Destructable o in Destructables){
+		o.Step();
+	}
+
+}

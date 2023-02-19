@@ -1,0 +1,66 @@
+public void OnStartup() {
+	SharpshootersVsBrawlers();
+}
+
+public void SharpshootersVsBrawlers() {
+	IPlayer[] players = Game.GetPlayers();
+	Random random = new Random();
+	int ssTotal = 0;
+	int bTotal = 0;
+	while (ssTotal < Math.Floor(players.Length/2d) | bTotal < Math.Floor(players.Length/2d)) {
+		ssTotal = 0;
+		bTotal = 0;
+		for (int i = 0; i < players.Length; i++) {
+			int randomTeam = random.Next(2);
+			Game.WriteToConsole(randomTeam);
+			if (randomTeam==1) {
+				players[i].CustomID = "Sharpshooter";
+				players[i].SetTeam(PlayerTeam.Team1);
+			} else {
+				players[i].CustomID = "Brawler";
+				players[i].SetTeam(PlayerTeam.Team2);
+			} 
+		}
+		Game.WriteToConsole(ssTotal);
+		for (int i = 0; i < players.Length; i++) {
+			if (players[i].CustomID.Equals("Sharpshooter")) {
+				ssTotal = ssTotal + 1;
+			}
+			else {
+				bTotal = bTotal+1;
+			}
+		}
+	}
+	
+	PlayerModifiers brawler = new PlayerModifiers();
+	brawler.MaxHealth = 200;
+	brawler.MaxEnergy = 100;
+	brawler.CurrentHealth = brawler.MaxHealth;
+	brawler.EnergyConsumptionModifier = 0.9f;
+	brawler.MeleeDamageDealtModifier = 1.5f;
+	brawler.MeleeForceModifier = 1.5f;
+	brawler.RunSpeedModifier = 1.1f;
+	brawler.ExplosionDamageTakenModifier = 0.9f;
+	brawler.SprintSpeedModifier = 1.5f;
+	brawler.SizeModifier = 1.25f;
+	brawler.EnergyRechargeModifier = 1.5f;
+
+	PlayerModifiers sharpshooter = new PlayerModifiers();
+	sharpshooter.ProjectileCritChanceDealtModifier = 20f;
+	sharpshooter.MaxEnergy = 9999;
+	sharpshooter.CurrentEnergy = 9999f;
+	sharpshooter.EnergyConsumptionModifier = 0;
+	sharpshooter.ProjectileDamageTakenModifier = 0f;
+	sharpshooter.ProjectileDamageDealtModifier = 1.5f;
+	sharpshooter.MeleeDamageDealtModifier = 0.5f;
+	sharpshooter.SizeModifier = 0.5f;
+
+	for (int i = 0; i< players.Length; i++) {
+		if (players[i].CustomID.Equals("Brawler")) {
+			players[i].SetModifiers(brawler);
+		} else if (players[i].CustomID.Equals("Sharpshooter")) {
+			players[i].SetModifiers(sharpshooter);
+		}
+	}
+}
+

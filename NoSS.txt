@@ -1,0 +1,10 @@
+public void AfterStartup() {
+	Events.UpdateCallback.Start(NoSS);
+}
+
+public void NoSS(float e) {
+	IObjectStreetsweeperCrate[] ss = Game.GetObjects<IObjectStreetsweeperCrate>();
+	foreach (IObjectStreetsweeperCrate s in ss) {
+		s.Remove();
+	}
+}

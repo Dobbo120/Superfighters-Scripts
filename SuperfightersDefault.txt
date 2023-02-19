@@ -1,0 +1,100 @@
+public void OnStartup() {
+	Events.UpdateCallback.Start(JacobGrenades, 0, 0);
+	//Events.UpdateCallback.Start(ExplosionTrack, 0, 0);
+	Events.UpdateCallback.Start(StreetsweeperPunish, 0, 0);
+	powerMeg();
+}
+
+public void JacobGrenades(float elapsed) {
+	
+	IUser[] findJacob = Game.GetActiveUsers();
+	for (int i = 0; i <findJacob.Length; i++) {
+		if (findJacob[i].Name.Equals("Jarco")) {
+			IPlayer jacob = findJacob[i].GetPlayer();
+			IObjectGrenadeThrown[] jGrenades = Game.GetObjects<IObjectGrenadeThrown>();
+			for (int j = 0; j < jGrenades.Length; j++) {
+				if(jGrenades[j].GetExplosionTimer() > 2200f & jGrenades[j].CustomID.Equals("ISDUD") == false & jGrenades[j].CustomID.Equals("EXPLODESOON") == false & jGrenades[j].GetExplosionTimer() > 5f & Math.Abs(jGrenades[j].GetWorldPosition().X-jacob.GetWorldPosition().X) < 9f) {
+					jGrenades[j].CustomID = "ISDUD";
+					jGrenades[j].SetDudChance(1f);
+
+				}else if(jGrenades[j].GetExplosionTimer() < 1500f & jGrenades[j].CustomID.Equals("ISDUD") == false & jGrenades[j].CustomID.Equals("EXPLODESOON") == false & jGrenades[j].GetExplosionTimer() > 5f & Math.Abs(jGrenades[j].GetWorldPosition().X-jacob.GetWorldPosition().X) < 9f) {
+					jGrenades[j].CustomID = "EXPLODESOON";
+					jGrenades[j].SetDudChance(0f);
+					jGrenades[j].SetExplosionTimer(1f);
+				}
+			}
+		}
+	}
+}
+
+public void powerMeg() {
+	IUser[] findMeg = Game.GetActiveUsers();
+	for (int i = 0; i < findMeg.Length; i++) {
+		if (findMeg[i].Name.Equals("Megaroo") == true) {
+			PlayerModifiers mega = new PlayerModifiers();
+			mega.EnergyRechargeModifier = 1.1f;
+			mega.EnergyConsumptionModifier = 0.9f;
+			mega.MaxEnergy = 110;
+			mega.CurrentHealth = 110;
+			mega.MaxHealth = 110;
+			mega.ProjectileCritChanceTakenModifier = 0f;
+			mega.ProjectileDamageDealtModifier = 1.5f;
+			mega.ProjectileCritChanceDealtModifier = 100f;
+			mega.MeleeStunImmunity = 0;
+			mega.MeleeForceModifier = 1.5f;
+			mega.SprintSpeedModifier = 1.1f;
+			IPlayer meg = findMeg[i].GetPlayer();
+			meg.SetModifiers(mega);
+		}
+	}
+
+}
+
+public void ExplosionTrack(float elapsed)
+{
+	IObject[] objects = Game.GetObjectsByName("BarrelWreck");
+	IUser[] findWill = Game.GetActiveUsers();
+	for (int i = 0; i < findWill.Length; i++) 
+	{
+		if (findWill[i].GetTeam() == PlayerTeam.Team3 & findWill[i].GetPlayer().IsDead == false) 
+		{
+			IPlayer willPlayer = findWill[i].GetPlayer();
+			Vector2 playerPos = willPlayer.GetWorldPosition();
+
+			for (int j = 0; j < objects.Length; j++)
+			{
+				
+				float xDistFromWill = objects[j].GetWorldPosition().X-playerPos.X;
+				float yDistFromWill = objects[j].GetWorldPosition().Y-playerPos.Y;
+				float yChange;
+				if (yDistFromWill > 0) {
+					yChange = objects[j].GetLinearVelocity().Y;
+				} else {
+					yChange = 8f;
+				}
+				float xDiff = objects[j].GetLinearVelocity().X-xDistFromWill;
+				float yPos = xDiff/2 + 5;
+				Vector2 newLinVel;
+				if (xDistFromWill > 50) {
+					newLinVel = new Vector2((objects[j].GetLinearVelocity().X-xDistFromWill)/10,yChange);
+				} else {
+
+					newLinVel = new Vector2((objects[j].GetLinearVelocity().X-xDistFromWill)/5,yChange);
+				}
+				objects[j].	SetLinearVelocity(newLinVel);
+			}
+		} 
+	}	
+	
+}
+
+public void StreetsweeperPunish(float elapsed) {
+	IObjectStreetsweeperCrate[] sweepers = Game.GetObjects<IObjectStreetsweeperCrate>();
+	for (int i = 0; i < sweepers.Length; i++)  {
+		if (sweepers[i].IsActivatedAndOpening) {
+			IPlayer sweppy = sweepers[i].GetOwnerPlayer();
+			Game.TriggerExplosion(sweppy.GetWorldPosition());
+		}
+	}
+	
+}

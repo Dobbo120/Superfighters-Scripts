@@ -1,0 +1,25 @@
+public void OnStartup() {
+	Events.UpdateCallback.Start(JacobGrenades, 0, 0);
+}
+
+public void JacobGrenades(float elapsed) {
+	
+	IUser[] findJacob = Game.GetActiveUsers();
+	for (int i = 0; i <findJacob.Length; i++) {
+		if (findJacob[i].Name.Equals("Jarco")) {
+			IPlayer jacob = findJacob[i].GetPlayer();
+			IObjectGrenadeThrown[] jGrenades = Game.GetObjects<IObjectGrenadeThrown>();
+			for (int j = 0; j < jGrenades.Length; j++) {
+				if(jGrenades[j].GetExplosionTimer() > 2200f & jGrenades[j].CustomID.Equals("ISDUD") == false & jGrenades[j].CustomID.Equals("EXPLODESOON") == false & jGrenades[j].GetExplosionTimer() > 5f & Math.Abs(jGrenades[j].GetWorldPosition().X-jacob.GetWorldPosition().X) < 9f) {
+					jGrenades[j].CustomID = "ISDUD";
+					jGrenades[j].SetDudChance(1f);
+
+				}else if(jGrenades[j].GetExplosionTimer() < 1500f & jGrenades[j].CustomID.Equals("ISDUD") == false & jGrenades[j].CustomID.Equals("EXPLODESOON") == false & jGrenades[j].GetExplosionTimer() > 5f & Math.Abs(jGrenades[j].GetWorldPosition().X-jacob.GetWorldPosition().X) < 9f) {
+					jGrenades[j].CustomID = "EXPLODESOON";
+					jGrenades[j].SetDudChance(0f);
+					jGrenades[j].SetExplosionTimer(1f);
+				}
+			}
+		}
+	}
+}

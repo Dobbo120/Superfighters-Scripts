@@ -1,0 +1,45 @@
+float m_totalElapsed = 0f;
+Events.UpdateCallback m_updateEvent = null;
+IObject[] textToKill = null;
+
+public void OnStartup() {
+	Events.UpdateCallback.Start(WheelOfChallenges,75,25);
+	m_updateEvent = Events.UpdateCallback.Start(TimeTracker,0);
+}
+
+public void TimeTracker(float e) {
+	m_totalElapsed += e;
+	if (m_totalElapsed > 7500) {
+		textToKill = Game.GetObjectsByCustomID("currentChallenge");
+		for (int i = 0; i < textToKill.Length; i++) {
+			textToKill[i].Remove();
+		}	
+	}
+}
+
+public void WheelOfChallenges(float elapsed) {
+	textToKill = Game.GetObjectsByCustomID("currentChallenge");
+	for (int i = 0; i < textToKill.Length; i++) {
+		textToKill[i].Remove();
+	}
+	IPlayer[] players = Game.GetPlayers();
+	IObjectText[] challenges = new IObjectText[players.Length];
+	string[] challengeList = {
+		"Throw a Player to their Death Off A Ledge",
+		"Land the Finishing Blow on a Player with Your Utility",
+		"Kill a Player by Hitting Them with Your Thrown Weapon",
+		"Set Another Player On Fire",
+		"Explode Another Player",
+		"Play This Round Without Picking Up a Weapon with Ammunition",
+		"No Picking Up Melee or Utility: Get a Kill",
+		"No Picking Up Melee, Ranged, or Utility: Survive to Final Two"
+	};
+	Random random = new Random();
+	for (int i = 0; i < players.Length; i++) {
+		challenges[i] = (IObjectText)Game.CreateObject("Text", new Vector2(players[i].GetWorldPosition().X, players[i].GetWorldPosition().Y+25));
+		challenges[i].CustomID = "currentChallenge";
+		challenges[i].SetText(challengeList[random.Next(challengeList.Length)]);
+		challenges[i].SetTextAlignment(TextAlignment.Middle);
+	}
+	
+}

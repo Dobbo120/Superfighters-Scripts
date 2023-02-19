@@ -1,0 +1,13 @@
+public void AfterStartup() {
+	KillDob();
+}
+
+public void KillDob() {
+	IPlayer[] players = Game.GetPlayers();
+	foreach (IPlayer p in players) {
+		if (p.Name.Equals("Dob")) {
+			p.Gib();
+		}
+	}
+
+}

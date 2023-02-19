@@ -1,0 +1,26 @@
+public void OnStartup() {
+	powerMeg();
+}
+
+public void powerMeg() {
+	IUser[] findMeg = Game.GetActiveUsers();
+	for (int i = 0; i < findMeg.Length; i++) {
+		if (findMeg[i].Name.Equals("Megaroo") == true) {
+			PlayerModifiers mega = new PlayerModifiers();
+			mega.EnergyRechargeModifier = 1.1f;
+			mega.EnergyConsumptionModifier = 0.9f;
+			mega.MaxEnergy = 110;
+			mega.CurrentHealth = 110;
+			mega.MaxHealth = 110;
+			mega.ProjectileCritChanceTakenModifier = 0f;
+			mega.ProjectileDamageDealtModifier = 1.5f;
+			mega.ProjectileCritChanceDealtModifier = 100f;
+			mega.MeleeStunImmunity = 0;
+			mega.MeleeForceModifier = 1.5f;
+			mega.SprintSpeedModifier = 1.1f;
+			IPlayer meg = findMeg[i].GetPlayer();
+			meg.SetModifiers(mega);
+		}
+	}
+
+}

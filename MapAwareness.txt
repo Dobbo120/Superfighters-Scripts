@@ -1,0 +1,31 @@
+public void ExplosionTrack(float elapsed)
+{
+	IObject[] objects = Game.GetObjectsByName("BarrelWreck");
+	IUser[] randUser = Game.GetActiveUsers();
+
+	IPlayer randPlayer = findWill[i].GetPlayer();
+	Vector2 playerPos = willPlayer.GetWorldPosition();
+
+	for (int j = 0; j < objects.Length; j++)
+	{
+		float xDistFromWill = objects[j].GetWorldPosition().X-playerPos.X;
+		float yDistFromWill = objects[j].GetWorldPosition().Y-playerPos.Y;
+		float yChange;
+		if (yDistFromWill > 0) {
+			yChange = objects[j].GetLinearVelocity().Y;
+		} else {
+			yChange = 8f;
+		}
+		float xDiff = objects[j].GetLinearVelocity().X-xDistFromWill;
+		float yPos = xDiff/2 + 5;
+				Vector2 newLinVel;
+				if (xDistFromWill > 50) {
+					newLinVel = new Vector2((objects[j].GetLinearVelocity().X-xDistFromWill)/10,yChange);
+				} else {
+
+					newLinVel = new Vector2((objects[j].GetLinearVelocity().X-xDistFromWill)/5,yChange);
+				}
+				objects[j].	SetLinearVelocity(newLinVel);
+				
+}
+
