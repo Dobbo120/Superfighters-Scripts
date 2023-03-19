@@ -57,7 +57,7 @@
 	),
 */
 public static Ammo[] AmmoTypes = new Ammo[]{
-	
+
 	new Ammo(
 		null,
 		chainOnHit,

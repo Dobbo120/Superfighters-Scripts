@@ -55,6 +55,21 @@ public static List<Throwable> Throwables 						= new List<Throwable>();
 public static List<ThrowableDefinition> ThrowableDefinitions	= new List<ThrowableDefinition>(){
 	
 	new ThrowableDefinition(
+		"Revive Dart",
+		"Dobbo",
+		"Set on a dead body to bring them back to life on your team",
+		
+		WeaponItem.GRENADES,
+		"ItemSpeedBoost",
+		
+		1,
+		2,
+		
+		5000,
+		ReviveDart.Init
+	),
+	
+	new ThrowableDefinition(
 		"Sticky Grenade",
 		"Ebomb09",
 		"Stick on to a surface and wait for an explosion",
@@ -1438,6 +1453,7 @@ public static void CreateTimer(int interval, int count, string method, string id
     timerTrigger.Trigger();
 }
 
+
 /*
 	Sticky Bomb
 	Ebomb09
@@ -2709,12 +2725,55 @@ public class PresentNugget : Nugget
 		player.SetTeam(PlayerTeam.Independent);
 
 		player.GiveWeaponItem(WeaponItem.KNIFE);
-		player.GiveWeaponItem(WeaponItem.M60);7
+		player.GiveWeaponItem(WeaponItem.M60);
 		player.GiveWeaponItem(WeaponItem.UZI);
 
 		Game.CreateDialogue("Ho ho ho!", new Color(128, 32, 32), player);
 	}
 }
+
+/*
+	Revive Dart
+	Dobbo
+*/
+
+public class ReviveDart : Nugget{
+	
+	public static ThrowableBehaviour Init() {
+		return new ReviveDart();
+	}
+	
+	public ReviveDart() { CheckColliding = true; }
+	
+	protected override void OnCollision(IObject collidedObject)
+	{
+		base.OnCollision(collidedObject);
+		Game.WriteToConsole(collidedObject);
+		CheckColliding = false;
+		Revive(collidedObject);
+		Instance.Remove();
+	}
+	private void Revive(IObject collidedObject) {
+		var player = ScriptHelper.CastPlayer(collidedObject);
+		if (player != null && player.IsDead)
+		{
+			IUser deadUser = player.GetUser();
+			Events.UpdateCallback.Start((float e) => {
+				Game.PlayEffect(EffectName.Blood, RandomHelper.WithinArea(player.GetAABB()));
+			},100,10);
+			Events.UpdateCallback.Start(e => {
+				IPlayer newBody = Game.CreatePlayer(player.GetWorldPosition());
+				newBody.SetUser(deadUser);
+				IProfile prof = player.GetProfile();
+				newBody.SetProfile(prof);
+				newBody.SetTeam(Throwable.OwnerPlayer.GetTeam());
+				player.Remove();
+			}, 1000,1);
+		}
+	}
+}
+
+
 
 public class StunNugget : Nugget
 {
