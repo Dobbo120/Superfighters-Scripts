@@ -55,6 +55,21 @@ public static List<Throwable> Throwables 						= new List<Throwable>();
 public static List<ThrowableDefinition> ThrowableDefinitions	= new List<ThrowableDefinition>(){
 	
 	new ThrowableDefinition(
+		"Satellite Strike"
+		"Dobbo"
+		"boom"
+		
+		WeaponItem.C4,
+		"WpnC4Thrown",
+		
+		1,
+		1,
+		
+		5000,
+		SatelliteStrike.Init
+	),
+	
+	new ThrowableDefinition(
 		"Revive Dart",
 		"Dobbo",
 		"Set on a dead body to bring them back to life on your team",
@@ -1452,7 +1467,25 @@ public static void CreateTimer(int interval, int count, string method, string id
     timerTrigger.CustomId = id;
     timerTrigger.Trigger();
 }
+/*
+	Satellite Strike
+	Dob
+*/
 
+public class SatelliteStrike : ThrowableBehaviour() {
+	public static ThrowableBehaviour Init() {
+		return new SatelliteStrike();
+	}
+	
+	public override void Destroy() {
+		Events.UpdateCallback.Start(e => {
+			for (int i = 0, i < 400, i+=20) {
+				Game.PlayEffect(
+			}
+		}, 50, 20);
+	}
+	
+}
 
 /*
 	Sticky Bomb
@@ -3755,7 +3788,16 @@ public class Longbow : ThrowableBehaviour
 		Game.PlayEffect("Electric", pos);
 	}
 }
-
+/*
+public class Firework : ThrowableBehaviour{
+	public static ThrowableBehaviour Init()
+	{
+		return new Firework();
+	}
+	
+	public override void Destroy
+}
+*/
 /*
 	Sync Mines
 	Ebomb09 + Minion

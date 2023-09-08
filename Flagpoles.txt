@@ -1,0 +1,58 @@
+Events.ObjectCreatedCallback m_objectCreatedEvent = null;
+Events.UpdateCallback m_UpdateCallbackEvent = null;
+
+public static Random rand = new Random();
+
+public void OnStartup() {
+   m_objectCreatedEvent = Events.ObjectCreatedCallback.Start(FlagReplacer);
+	m_UpdateCallbackEvent = Events.UpdateCallback.Start(ThrowingFlags);
+}
+
+public static List<WeaponItem> noMelee = new List<WeaponItem>() {
+	WeaponItem.AXE,
+	WeaponItem.BAT,
+	WeaponItem.BATON,
+	WeaponItem.LEAD_PIPE,
+	WeaponItem.CHAIN,
+	WeaponItem.KNIFE,
+	WeaponItem.SHOCK_BATON,
+	WeaponItem.CHAINSAW,
+	WeaponItem.WHIP,
+	WeaponItem.KATANA,
+	WeaponItem.MACHETE,
+	(WeaponItem)70,
+	(WeaponItem)92,
+	(WeaponItem)96,
+	(WeaponItem)97,
+	(WeaponItem)98,
+	(WeaponItem)99,
+	(WeaponItem)111,
+};
+
+public void FlagReplacer(IObject[] objs) {
+	foreach(IObject o in objs) {
+		if(o.Name.Equals("SupplyCrate00")) {
+			IObjectSupplyCrate supCrate = (IObjectSupplyCrate)o;
+			if(noMelee.Contains(supCrate.GetWeaponItem())) {
+				supCrate.SetWeaponItem(WeaponItem.FLAGPOLE);
+			}
+			else {
+				if(rand.Next(100) < 80) {
+					supCrate.SetWeaponItem(WeaponItem.FLAGPOLE);
+				}
+			}
+		}
+	}
+}
+
+public void ThrowingFlags(float e) {
+	IObjectWeaponItem[] flagpoles = Game.GetObjects<IObjectWeaponItem>();
+	foreach(IObjectWeaponItem f in flagpoles) {
+		if(f.WeaponItem.Equals(WeaponItem.FLAGPOLE) && !f.GetLinearVelocity().Equals(new Vector2(0,0)) && !f.CustomID.Equals("Accelerated")) {
+			f.SetLinearVelocity(new Vector2(5*f.GetLinearVelocity().X,f.GetLinearVelocity().Y));
+			f.CustomID = "Accelerated";
+		}
+	}
+	
+}
+
