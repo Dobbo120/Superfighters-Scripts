@@ -55,17 +55,17 @@ public static List<Throwable> Throwables 						= new List<Throwable>();
 public static List<ThrowableDefinition> ThrowableDefinitions	= new List<ThrowableDefinition>(){
 	
 	new ThrowableDefinition(
-		"Satellite Strike"
-		"Dobbo"
-		"boom"
+		"Satellite Strike",
+		"Dobbo",
+		"boom",
 		
 		WeaponItem.C4,
-		"WpnC4Thrown",
+		"Monitor00",
 		
 		1,
 		1,
 		
-		5000,
+		1500,
 		SatelliteStrike.Init
 	),
 	
@@ -1467,25 +1467,6 @@ public static void CreateTimer(int interval, int count, string method, string id
     timerTrigger.CustomId = id;
     timerTrigger.Trigger();
 }
-/*
-	Satellite Strike
-	Dob
-*/
-
-public class SatelliteStrike : ThrowableBehaviour() {
-	public static ThrowableBehaviour Init() {
-		return new SatelliteStrike();
-	}
-	
-	public override void Destroy() {
-		Events.UpdateCallback.Start(e => {
-			for (int i = 0, i < 400, i+=20) {
-				Game.PlayEffect(
-			}
-		}, 50, 20);
-	}
-	
-}
 
 /*
 	Sticky Bomb
@@ -1579,6 +1560,115 @@ public class ArrowTrap : ThrowableBehaviour{
 			Game.SpawnProjectile(ProjectileItem.BOW, Throwable.Object.GetWorldPosition(), Direction, ProjectilePowerup.Bouncing);
 		}	
 		Throwable.Object.Remove();
+	}
+}
+
+/*
+	Satellite Strike
+	Dobbo
+*/
+public class SatelliteStrike : ThrowableBehaviour{
+	bool isDone = false;
+	enum StrikeState{
+		Thrown,
+		AimTime,
+		BoomTime
+	};
+	
+	StrikePoint SPoint = null;
+	StrikeState State = StrikeState.Thrown;
+	class StrikePoint{
+	//If I run into errors, it may be because I don't really know how public works in these contexts
+		public Vector2 pos = Vector2.Zero;
+		public float lifetime = 0f;
+		public float crittime = 13f; //I am obviously cannibalizing code from Vortex Grenades, and I don't know why this equals 13, but exsceses almost certainly knows much more about C# than I do, so we're copying it
+		public float thirdtime = 13f;
+		public float fourthtime = 13f;
+		public bool alive = true;
+		public float MapHeight = Game.GetCameraMaxArea().Height;
+		
+		public StrikePoint(Vector2 target1, float target2){
+			this.pos = target1;
+			this.lifetime = target2;
+		}
+	}
+	
+	public static ThrowableBehaviour Init() {
+		return new SatelliteStrike();
+	}
+	
+	public override void Create(){
+		Game.PlaySound("MineArm", Throwable.Object.GetWorldPosition());		
+	}
+	
+	public override void Update() {
+		switch(State) {
+			case StrikeState.Thrown:
+				if(Throwable.ElapsedTime >= Throwable.Def.DetonationTime) {
+					
+					Game.PlaySound("C4Detonate", Position);
+					
+					State = StrikeState.AimTime;
+					SPoint = new StrikePoint(Position, Game.TotalElapsedGameTime + 1000f);
+					Throwable.Object.SetBodyType(BodyType.Static);
+				}
+			break;
+			
+			case StrikeState.AimTime:
+				if (SPoint != null) {
+					if(SPoint.lifetime < Game.TotalElapsedGameTime && SPoint.crittime == 13f){
+						
+						SPoint.crittime = Game.TotalElapsedGameTime + 1000f;
+						SPoint.thirdtime = Game.TotalElapsedGameTime + 1500f;
+						SPoint.fourthtime = Game.TotalElapsedGameTime + 1550f;
+					}
+										
+					if(SPoint.alive){
+						if (Game.TotalElapsedGameTime%rnd.Next(1,25)==2) {
+							Game.PlaySound("SniperAim", Vector2.Zero,0.4f);
+						}
+						if (SPoint.lifetime > Game.TotalElapsedGameTime) {
+							float xRadius = (SPoint.lifetime-Game.TotalElapsedGameTime)*64f/1000;
+							int maxOrbs = (64-(int)xRadius)/2;
+							for (int i = 0; i < maxOrbs; i++) {
+								
+								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*xRadius*2f-xRadius, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
+							}
+						}
+						if (SPoint.lifetime <= Game.TotalElapsedGameTime && Game.TotalElapsedGameTime < SPoint.crittime) {
+							for (int i = 0; i < 32; i++) {
+								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*2f-1, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
+							}
+						}
+						if (SPoint.thirdtime < Game.TotalElapsedGameTime && SPoint.thirdtime != 13f) {
+							State = StrikeState.BoomTime;
+							Throwable.Object.Remove();
+						}
+					}
+				}
+			break;
+			
+			case StrikeState.BoomTime:
+				if (SPoint.alive && Game.TotalElapsedGameTime < SPoint.fourthtime) {
+					Game.PlayEffect("CFTXT",Vector2.Zero,Convert.ToString(Game.TotalElapsedGameTime-SPoint.fourthtime));
+					for (int i = 0; i<100; i++) {
+						Vector2 exploLoc = new Vector2(SPoint.pos.X+rnd.Next(-100,100),SPoint.pos.Y+rnd.Next(-100,100));
+						if (Vector2.Distance(exploLoc,SPoint.pos) <=100) {
+							Game.TriggerExplosion(exploLoc);
+						}
+					}
+				}
+				
+				if (Game.TotalElapsedGameTime > SPoint.fourthtime) {
+					SPoint.alive = false;
+					isDone = true;
+				}
+			break;
+		}
+	}
+	
+	public override bool IsRemoved() {
+		return isDone;
 	}
 }
 
