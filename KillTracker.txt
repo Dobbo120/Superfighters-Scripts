@@ -1,0 +1,342 @@
+Events.ObjectCreatedCallback m_objectCreatedEvent = null;
+Events.UpdateCallback m_UpdateCallbackEvent = null;
+Events.PlayerDamageCallback m_PlayerDamageEvent= null;
+Events.PlayerDeathCallback m_PlayerDeathCallbackEvent = null;
+Events.UpdateCallback m_MiscDeathSources = null;
+Events.ObjectTerminatedCallback m_TrackGrenades = null;
+Events.ExplosionHitCallback m_LinkGrenades = null;
+Events.ProjectileHitCallback m_ShootyMcShootFace = null;
+Events.ObjectDamageCallback m_FuckYouStickyLauncher = null;
+Events.PlayerKeyInputCallback m_PlayerKeyInputEvent = null;
+
+public static IScriptStorage KTFile = null;
+
+public static Random rand = new Random();
+bool checkGameEnd = true;
+public void OnStartup() {
+	KTFile = Game.GetSharedStorage("KillTrackerFile");
+
+	m_PlayerDamageEvent = Events.PlayerDamageCallback.Start(DamageSource);
+	m_PlayerDeathCallbackEvent = Events.PlayerDeathCallback.Start(KillCount);
+	m_MiscDeathSources = Events.UpdateCallback.Start(MiscDeathSources);
+	m_TrackGrenades = Events.ObjectTerminatedCallback.Start(TrackGrenades);
+	m_LinkGrenades = Events.ExplosionHitCallback.Start(LinkGrenades);
+	m_ShootyMcShootFace = Events.ProjectileHitCallback.Start(ProjTrack);
+	m_FuckYouStickyLauncher = Events.ObjectDamageCallback.Start(FuckYouStickyLauncher);
+	m_PlayerKeyInputEvent = Events.PlayerKeyInputCallback.Start(TrackFlamethrower);
+
+	IObject PlayerIDTracker = Game.CreateObject("InvisibleBlockNoCollision",Vector2.Zero);
+	PlayerIDTracker.CustomID = "PlayerIDTracker";
+	IPlayer[] ply = Game.GetPlayers();	
+	checkGameEnd = true;
+	foreach (IPlayer p in ply) {
+		Game.WriteToConsole(p.GetUser().UserID);
+		p.CustomID = "LastHit" + ":" + "God" + ":" + "0" + ":" + "Smitten" + ":" + "Lightning";
+		KTFile.SetItem("GodRound",0);
+		KTFile.SetItem("God",0);
+		PlayerIDTracker.CustomID = PlayerIDTracker.CustomID + "/" + p.UniqueID + ":" + p.Name;
+		//p.SetModifiers(new PlayerModifiers() {CurrentHealth = 1,});
+		Game.WriteToConsole(PlayerIDTracker.CustomID);
+		Game.WriteToConsole(p.GetWorldPosition());
+		KTFile.SetItem(p.Name + "Round",0);
+		
+		if (KTFile.GetItem(p.Name) == null || p.GetUser().TotalGames == 0) {
+			KTFile.SetItem(p.Name,0);
+		}
+	}
+}
+
+public void DamageSource(IPlayer player, PlayerDamageArgs args) {
+	if (!player.IsDead) {
+		if (args.DamageType==PlayerDamageEventType.Projectile) {
+			if (Game.GetProjectile(args.SourceID).OwnerPlayerID != 0) {
+				//A null int is necessarily 0, I guess 
+				player.CustomID = "LastHit" + ":" + Game.GetPlayer(Game.GetProjectile(args.SourceID).OwnerPlayerID).GetUser().Name+":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Shot" + ":" + Game.GetProjectile(args.SourceID).ProjectileItem;
+			}
+		} else if (args.DamageType==PlayerDamageEventType.Melee) {
+			if (Game.GetPlayer(args.SourceID).CurrentMeleeWeapon.WeaponItem != WeaponItem.NONE) {
+				player.CustomID = "LastHit" + ":" + Game.GetPlayer(args.SourceID).GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Melee" + ":" + Game.GetPlayer(args.SourceID).CurrentMeleeWeapon.WeaponItem;
+			} else {
+				player.CustomID = "LastHit" + ":" + Game.GetPlayer(args.SourceID).GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Melee" + ":" + "FISTS";
+			}
+		} else if (args.DamageType==PlayerDamageEventType.Missile) {
+			if (Game.GetObject(args.SourceID).CustomID.Contains("Tracked")) {
+				player.CustomID = "LastHit" + ":" + Game.GetObject(args.SourceID).CustomID.Split(':')[1] + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Thrown" + ":" + Game.GetObject(args.SourceID).Name.Replace("Wpn","");
+			}
+		}
+	} 
+}
+
+public void MiscDeathSources(float e) {
+	if (checkGameEnd = true && Game.IsGameOver) {
+		IUser[] users = Game.GetActiveUsers();
+		foreach (IUser u in users) {
+			Game.ShowChatMessage(u.Name + " had " + KTFile.GetItem(u.Name + "Round") + " kill(s) this round");
+		}
+		m_MiscDeathSources.Stop();
+	}
+	IPlayer[] players = Game.GetPlayers();
+	foreach (IPlayer p in players) {
+		if (p.IsThrowing) {
+			IObject[] obj = Game.GetMissileObjects();
+			//This can probably yield false results with glitched crowbars and with items when they fly out as someone dies
+			foreach (IObject o in obj) {
+				if (!o.CustomID.Contains("Tracked")) {
+					o.CustomID = "Tracked:" + p.GetUser().Name;
+				}
+			}
+		}
+		if (p.IsCaughtByPlayerInGrab && !p.IsDead) {
+			p.CustomID = "LastHit" + ":" + Game.GetPlayer(p.CaughtByPlayerInGrabID).GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Grabbed" + ":" + "Grabbed";
+		}
+		if (p.IsCaughtByPlayerInDive && !p.IsDead) {
+			p.CustomID = "LastHit" + ":" + Game.GetPlayer(p.CaughtByPlayerInDiveID).GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Diven" + ":" + "Diven";
+		}
+		if (p.IsRocketRiding) {
+			p.CustomID = "LastHit" + ":" + Game.GetPlayer(Game.GetProjectile(p.RocketRidingProjectileInstanceID).InitialOwnerPlayerID).GetUser().Name + ":" + (Game.TotalElapsedGameTime + (500000f)) + ":" + "RocketRiding" + ":" + "Bazooka/RCM";
+			Game.GetProjectile(p.RocketRidingProjectileInstanceID).BounceCount = (int)p.GetUser().UserID;
+		}
+	}
+}
+
+public void TrackGrenades(IObject[] objs) {
+	foreach (IObject o in objs) {
+		if (o.Name.Contains("Thrown") && o.CustomID.Contains("Tracked")) {
+			IObject InvisBlock = Game.CreateObject("InvisibleBlockNoCollision",o.GetWorldPosition());
+			InvisBlock.CustomID = "INVISBLOCK" + ":" + o.CustomID.Split(':')[1] + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Exploded" + ":" + o.Name.Replace("Wpn","").Replace("Thrown","");
+			//LAGWARNING
+			if (o.Name.Equals("WpnMolotovsThrown")) {
+				MollyRC(o,28f,0f);
+				MollyRC(o,19.8f,19.8f);
+				MollyRC(o,0f,28f);
+				MollyRC(o,-19.8f,19.8f);
+				MollyRC(o,-28f,0f);
+				MollyRC(o,-19.8f,-19.8f);
+				MollyRC(o,0f,-28f);
+				MollyRC(o,19.8f,-19.8f);
+
+				InvisBlock.Remove();
+			}
+			//
+		}
+	}
+}
+
+public void MollyRC(IObject o, float xOffset,float yOffset) {
+	RayCastInput input = new RayCastInput(true) {BlockFire = RayCastFilterMode.True };
+	
+	Vector2 RCResult = new Vector2(o.GetWorldPosition().X+xOffset,o.GetWorldPosition().Y+yOffset+1);
+	RayCastResult[] rays = Game.RayCast(o.GetWorldPosition(),RCResult,input);
+	
+	foreach (RayCastResult r in rays) {
+		
+		if (r.Hit) {
+			RCResult = r.Position;
+			break;
+		}
+	}
+	input.ClosestHitOnly = false;
+	input.BlockFire = RayCastFilterMode.False;
+	
+	RayCastResult[] rays2 = Game.RayCast(RCResult,o.GetWorldPosition(),input);
+	foreach (RayCastResult r in rays2) {
+		
+		if (r.IsPlayer) {
+			Game.GetObject(r.ObjectID).CustomID = "LastHit" + ":" + o.CustomID.Split(':')[1] + ":" + (Game.TotalElapsedGameTime+(5000f)) + ":" + "Fire" + ":" + "Molotovs";
+			
+		}
+	}
+}
+
+public void LinkGrenades(ExplosionData explosion, ExplosionHitArg[] args) {
+	IObject[] invisBlocks = Game.GetObjectsByName("InvisibleBlockNoCollision");
+		
+		foreach (IObject inv in invisBlocks) {
+			if (Vector2.Distance(explosion.Position,inv.GetWorldPosition()) < 2.5) {
+				for (int i = 0; i < args.Length; i++) {
+					if (args[i].IsPlayer) {
+						Game.WriteToConsole(Game.GetPlayer(args[i].ObjectID).CustomID);
+						if (!Game.GetPlayer(args[i].ObjectID).CustomID.Equals("Ist gestorben")) {	
+							Game.GetPlayer(args[i].ObjectID).CustomID = "LastHit" + ":" + inv.CustomID.Split(':')[1] + ":" + (Game.TotalElapsedGameTime+(5000f) + ":" + "Exploded" + ":" + inv.CustomID.Split(':')[4]);
+						}
+						if (Game.GetPlayer(args[i].ObjectID).IsDead && !Game.GetPlayer(args[i].ObjectID).CustomID.Equals("Ist gestorben")) {
+							Game.ShowChatMessage(Game.GetPlayer(args[i].ObjectID).GetUser().Name + " was exploded by " + Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1] + " with " + inv.CustomID.Split(':')[4]);
+							KTFile.SetItem(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1],(int)KTFile.GetItem(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1])+1);
+							KTFile.SetItem(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1] + "Round",(int)KTFile.GetItem(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1] + "Round")+1);
+							//Game.ShowChatMessage(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1] + " has " + KTFile.GetItem(Game.GetPlayer(args[i].ObjectID).CustomID.Split(':')[1]) + " kills.");
+							Game.GetPlayer(args[i].ObjectID).CustomID = "Ist gestorben";
+						}												
+					}
+				}
+				
+				inv.Remove();
+				
+			}
+		}
+}
+
+public void ProjTrack(IProjectile prj, ProjectileHitArgs args) {
+	Game.WriteToConsole(Game.GetObject(args.HitObjectID).Name);
+	if (prj.ProjectileItem == ProjectileItem.BAZOOKA || prj.ProjectileItem == ProjectileItem.GRENADE_LAUNCHER || prj.ProjectileItem == (ProjectileItem)99 || prj.ProjectileItem == (ProjectileItem)100) {
+		
+		IObject InvisBlock = Game.CreateObject("InvisibleBlockNoCollision",args.HitPosition);
+
+		InvisBlock.CustomID = "INVISBLOCK" + ":" + Game.GetPlayer(prj.OwnerPlayerID).GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f));
+		if (prj.ProjectileItem == ProjectileItem.GRENADE_LAUNCHER) {
+			InvisBlock.CustomID = InvisBlock.CustomID + ":" + "Exploded" + ":" + "Grenade launcher";
+		} else if (prj.ProjectileItem == (ProjectileItem)99) {
+			InvisBlock.CustomID = InvisBlock.CustomID + ":" + "Exploded" + ":" + "Quad launcher";
+		} else if (prj.ProjectileItem == (ProjectileItem)100) {
+			InvisBlock.CustomID = InvisBlock.CustomID + ":" + "Exploded" + ":" + "RCM";
+		} else if (prj.ProjectileItem == ProjectileItem.BAZOOKA) {
+			InvisBlock.CustomID = InvisBlock.CustomID + ":" + "Exploded" + ":" + "Bazooka";
+		}
+		if (args.IsPlayer) {
+			IUser[] users = Game.GetActiveUsers();
+			IObject[] iBlocks = Game.GetObjectsByName("InvisibleBlockNoCollision");
+			IObject pIDTrack = null;
+			foreach (IObject inv in iBlocks) {
+				if (inv.CustomID.Contains("PlayerIDTracker")) {
+					pIDTrack = inv;
+				}
+			}
+			foreach (IUser p in users) {
+				if (prj.BounceCount == (int)p.UserID) {
+					String[] IDPairs = pIDTrack.CustomID.Split('/');
+					String deadUserID = "";
+					for (int i = 1; i < IDPairs.Length; i++) {
+						if (args.HitObjectID == Int32.Parse(IDPairs[i].Split(':')[0])) {
+							deadUserID = IDPairs[i].Split(':')[1];
+						}
+					}
+					//Game.GetPlayer(args.HitObjectID).CustomID = "LastHit" + ":" + p.GetUser().Name + ":" + (Game.TotalElapsedGameTime+(5000f));
+					Game.ShowChatMessage(deadUserID + " kamikazed " + p.Name);
+					KTFile.SetItem(deadUserID, (int)KTFile.GetItem(deadUserID) + 1);
+					KTFile.SetItem(deadUserID + "Round", (int)KTFile.GetItem(deadUserID + "Round") + 1);
+				}	
+			}
+				
+		}
+	}
+}
+
+public void KillCount(IPlayer player, PlayerDeathArgs args) {
+
+	//Damage from being shot and from being hit with melee.  The last hit is tracked for 5 seconds following Minecraft XP rules, however, since Minecraft is a slower-paced game
+	//this may be too long of a period to track
+	if (args.Killed && !player.CustomID.Equals("Ist gestorben")) {
+		
+		if (player.CustomID.Contains("LastHit") && Game.TotalElapsedGameTime < float.Parse(player.CustomID.Split(':')[2])) {
+			
+			if (player.CustomID.Split(':').Equals("Thrown")) {
+				int rnd = rand.Next(5);
+				String deathMessage = " was killed by ";
+				if (rnd == 1) {
+					deathMessage = " was doomed by ";
+				} else if (rnd == 2) {
+					deathMessage = " suffered a skill issue at the hands of ";
+				} else if (rnd == 3) {
+					deathMessage = " couldn't handle ";
+				}
+				Game.ShowChatMessage(player.GetUser().Name + deathMessage + player.CustomID.Split(':')[1] + " using a thrown " + player.CustomID.Split(':')[4]);
+				
+			} else {
+				int rnd = rand.Next(5);
+				String deathMessage = " was killed by ";
+				if (rnd == 1) {
+					deathMessage = " was doomed by ";
+				} else if (rnd == 2) {
+					deathMessage = " suffered a skill issue at the hands of ";
+				} else if (rnd == 3) {
+					deathMessage = " couldn't handle ";
+				}
+				Game.ShowChatMessage(player.GetUser().Name + deathMessage + player.CustomID.Split(':')[1] + " using " + player.CustomID.Split(':')[4]);
+			}
+			KTFile.SetItem(player.CustomID.Split(':')[1],(int)KTFile.GetItem(player.CustomID.Split(':')[1]) + 1);
+			KTFile.SetItem(player.CustomID.Split(':')[1] + "Round",(int)KTFile.GetItem(player.CustomID.Split(':')[1] + "Round") + 1);
+			//Game.ShowChatMessage(player.CustomID.Split(':')[1] + " has " + KTFile.GetItem(player.CustomID.Split(':')[1]) + " kills.");
+		}
+		
+	} else if (args.Removed && !player.CustomID.Equals("Ist gestorben")) {
+		if (player.CustomID.Contains("LastHit") && Game.TotalElapsedGameTime < float.Parse(player.CustomID.Split(':')[2]) && !player.IsDead  && !player.IsHoldingPlayerInDive) {
+			
+			
+			if (player.CustomID.Split(':').Equals("Thrown")) {
+				int rnd = rand.Next(5);
+				String deathMessage = " was killed by ";
+				if (rnd == 1) {
+					deathMessage = " was doomed by ";
+				} else if (rnd == 2) {
+					deathMessage = " suffered a skill issue at the hands of ";
+				} else if (rnd == 3) {
+					deathMessage = " couldn't handle ";
+				}
+				//if (Player.CustomID) {
+					
+				//}
+
+				Game.ShowChatMessage(player.GetUser().Name + deathMessage + player.CustomID.Split(':')[1] + " using a thrown " + player.CustomID.Split(':')[4]);
+				Game.ShowChatMessage(player.CustomID.Split(':')[1] + " has " + KTFile.GetItem(player.CustomID.Split(':')[1]) + " kills.");
+				
+			} else {
+				int rnd = rand.Next(5);
+				String deathMessage = " was killed by ";
+				if (rnd == 1) {
+					deathMessage = " was doomed by ";
+				} else if (rnd == 2) {
+					deathMessage = " suffered a skill issue at the hands of ";
+				} else if (rnd == 3) {
+					deathMessage = " couldn't handle ";
+				}
+				Game.ShowChatMessage(player.GetUser().Name + deathMessage + player.CustomID.Split(':')[1] + " using " + player.CustomID.Split(':')[4]);
+			}
+			KTFile.SetItem(player.CustomID.Split(':')[1],(int)KTFile.GetItem(player.CustomID.Split(':')[1]) + 1);
+			KTFile.SetItem(player.CustomID.Split(':')[1] + "Round",(int)KTFile.GetItem(player.CustomID.Split(':')[1] + "Round") + 1);
+			//Game.ShowChatMessage(player.CustomID.Split(':')[1] + " has " + KTFile.GetItem(player.CustomID.Split(':')[1]) + " kills.");
+		}
+
+	}
+	player.CustomID = "Ist gestorben";
+}
+
+
+public void FuckYouStickyLauncher(IObject obj, ObjectDamageArgs args) {
+		/* 
+			Born to die
+			Sticky Launcher is a Fuck
+			Kill em all 1989
+			Anyone who picks up Sticky Launcher is a trash man
+			410,757,864,530 Dead Supercops
+		*/
+		// Maybe one day I'll figure out how to track sticky launcher kills
+}
+
+public void TrackFlamethrower(IPlayer player, VirtualKeyInfo[] keyEvents) {
+	for (int i = 0; i < keyEvents.Length; i++) {
+		if (keyEvents[i].Event == VirtualKeyEvent.Pressed && keyEvents[i].Key == VirtualKey.ATTACK) {
+			if (player.CurrentWeaponDrawn == WeaponItemType.Rifle && player.CurrentPrimaryRangedWeapon.WeaponItem == WeaponItem.FLAMETHROWER && player.CurrentPrimaryRangedWeapon.CurrentAmmo > 0) {
+				
+				RayCastInput input = new RayCastInput(true) { BlockFire = RayCastFilterMode.True };
+				
+				Vector2 pPos = new Vector2(player.GetWorldPosition().X,player.GetWorldPosition().Y+12);
+				RayCastResult[] rays = Game.RayCast(pPos+ player.AimVector*10,pPos+ player.AimVector*155, input);
+				Vector2 pos2 = pPos + player.AimVector*155;
+				foreach (RayCastResult r in rays) {
+					pos2 = r.Position;
+					break;
+				}
+				input.ClosestHitOnly  = false;
+				input.BlockFire = RayCastFilterMode.False;
+				RayCastResult[] rays2 = Game.RayCast(pPos + player.AimVector*10,pos2,input);
+				foreach (RayCastResult r in rays2) {
+					if (r.IsPlayer) {
+						r.HitObject.CustomID = "LastHit" + ":" + player.Name + ":" + (Game.TotalElapsedGameTime + (5000f)) + ":" + "Fire" + ":" + "Flamethrower";
+						
+					}
+				}		
+			}
+		}
+	}
+}
+//Scenarios that don't yet exist, that I already know I need.
+//Track Explosive Barrels that are shot

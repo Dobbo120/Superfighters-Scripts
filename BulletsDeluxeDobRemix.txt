@@ -180,6 +180,14 @@ public static Ammo[] AmmoTypes = new Ammo[]{
 	
 	new Ammo(
 		null,
+		swapHit,
+		"Swap Bullets",
+		"Dobbo",
+		"Swaps two players on hit"
+	),
+	
+	new Ammo(
+		null,
 		balloonHit,
 		"Balloon Bullets",
 		"motto",
@@ -1609,12 +1617,12 @@ public static void hollowPointHit(IProjectile pp, ProjectileHitArgs args){
 
 	var obj = Game.GetObject(Obj_ID);
 	if(obj is IPlayer && !obj.CustomId.Contains("Bleeder")){
-	((IPlayer)obj).CustomId = "Bleeder/" + (Game.TotalElapsedGameTime + (3000f));
+	((IPlayer)obj).CustomID = ((IPlayer)obj).CustomID + ":" "Bleeder/" + (Game.TotalElapsedGameTime + (3000f));
 	}
 	if(obj is IPlayer && obj.CustomId.Contains("Bleeder")){
-	((IPlayer)obj).CustomId = "Bleeder/" + (float.Parse(((IPlayer)obj).CustomId.Split('/')[1]) + 1250f);
+	((IPlayer)obj).CustomID = ((IPlayer)obj).CustomID.Split(':')[5] + ":" + "Bleeder/" + (float.Parse(((IPlayer)obj).CustomId.Split('/')[1]) + 1250f);
 	Game.PlayEffect("HIT_S", obj.GetWorldPosition());
-	//Game.PlayEffect("CFTXT",obj.GetWorldPosition(), obj.CustomId);
+	//Game.PlayEffect("CFTXT",obj.GetWorldPosition(), obj.CustomID);
 	}
 }
 
@@ -1861,7 +1869,7 @@ public static void PunchBot(Vector2 position)
 
 	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.BotD));
 	player.SetBotBehaviorActive(true);
-	player.CustomId = "botBullet" + Game.TotalElapsedGameTime;
+	player.CustomId = "LastHit:This Cruel Universe:1000000:Demolecularization:Demolecularization:botBullet/" + Game.TotalElapsedGameTime;
 	player.SetTeam(PlayerTeam.Independent);
 		
 		CreateTimer(1500, 1, "KillBot", "botBullet" + Game.TotalElapsedGameTime);
@@ -2179,6 +2187,19 @@ public static void teleHit(IProjectile projectile, ProjectileHitArgs args)
 }
 
 /*
+	Swap Bullets
+	Dobbo
+
+public static void swapHit(IProjectile projectile,ProjectileHitArgs args) {
+	IPlayer p = Game.GetPlayer(projectile.OwnerPlayerID);
+	
+	if (p != null && args.RemoveFlag) {
+		
+	}
+}
+*/
+
+/*
 	Balloon Bullets
 	motto
 */
@@ -2195,7 +2216,7 @@ public static void balloonHit(IProjectile projectile, ProjectileHitArgs args)
 	if(args.IsPlayer)
 	{
 		var vict = Game.GetPlayer(args.HitObjectID);
-	if (Game.GetSingleObjectByCustomId(vict.Name + "Thingy") == null)
+		if (Game.GetSingleObjectByCustomId(vict.Name + "Thingy") == null)
 		{
 			CreateBalloon(vict, true);
 			var tim = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger");
