@@ -5,7 +5,7 @@
  | | |_ | '__/ _ \ '_ \ / _` |/ _` |/ _ \/ __| | |  | |/ _ \ | | | \ \/ / _ \ 
  | |__| | | |  __/ | | | (_| | (_| |  __/\__ \ | |__| |  __/ | |_| |>  <  __/ 
   \_____|_|  \___|_| |_|\__,_|\__,_|\___||___/ |_____/ \___|_|\__,_/_/\_\___| 
-	Written By Ebomb09
+	Written By Ebomb09, edited by Jacro, extra mods by Dobbo
 	
 	Credits:
 		-Motto73
@@ -55,20 +55,34 @@ public static List<Throwable> Throwables 						= new List<Throwable>();
 public static List<ThrowableDefinition> ThrowableDefinitions	= new List<ThrowableDefinition>(){
 	
 	new ThrowableDefinition(
-		"Satellite Strike",
-		"Dobbo",
-		"boom",
-		
-		WeaponItem.C4,
-		"Monitor00",
-		
-		1,
-		1,
-		
-		1500,
-		SatelliteStrike.Init
+   	 "Satellite Strike",
+    	"Dobbo",
+    	"boom",
+
+   	 WeaponItem.C4,
+    	"Monitor00",
+
+    	1,
+    	1,
+
+    	1500,
+    	SatelliteStrike.Init
 	),
+
+	new ThrowableDefinition(
+		"Streetsweeper Swarm",
+		"Dob",
+		"Fly with a swarm of gun-less streetsweepers",
+		
+		WeaponItem.GRENADES,
+		"MetalDebris00B",
 	
+		1,
+		3,
+		
+		12500,
+		StreetsweeperSwarm.Init
+	),
 	new ThrowableDefinition(
 		"Revive Dart",
 		"Dobbo",
@@ -83,7 +97,6 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		5000,
 		ReviveDart.Init
 	),
-	
 	new ThrowableDefinition(
 		"Sticky Grenade",
 		"Ebomb09",
@@ -158,22 +171,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		3000,												
 		TearingNugget.Init									
 	),
-	
-	new ThrowableDefinition(
-		"Sticky Nugget",									
-		"NearHuscarl",										
-		"Sticks the first object it contacts with and explodes after a while, can destroy small indestructible objects",
 		
-		WeaponItem.MINES,									
-		"WpnC4Thrown",	
-		
-		4,													
-		4,	
-		
-		-1,												
-		StickyNugget.Init										
-	),
-	
 	new ThrowableDefinition(
 		"Suicide Dove",									
 		"NearHuscarl",										
@@ -182,7 +180,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		WeaponItem.GRENADES,										
 		"Dove00",			
 		
-		3,												
+		1,												
 		5,		
 		
 		-1,				
@@ -203,22 +201,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		2000,		
 		PresentNugget.Init										
 	),
-	
-	new ThrowableDefinition(
-		"Stun Nugget",									
-		"NearHuscarl",											
-		"Stuns enemies, has a small chance to stun enemies in a range",	
 		
-		WeaponItem.C4,										
-		"WpnC4Thrown",		
-		
-		5,													
-		8,	
-		
-		-1,												
-		StunNugget.Init										
-	),
-	
 	new ThrowableDefinition(
 		"Spinning Nugget",										
 		"NearHuscarl",											
@@ -242,7 +225,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		WeaponItem.GRENADES,										
 		"ItemStrengthBoost",	
 		
-		2,													
+		3,													
 		4,		
 		
 		-1,												
@@ -332,7 +315,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		WeaponItem.MINES,										
 		"HangingCrateHolder",										
 		
-		4,													
+		6,													
 		4,													
 		
 		-1,												
@@ -362,7 +345,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		WeaponItem.SHURIKEN,                                	
 		"WpnShurikenThrown",                                	
 	
-		2,                                                  	
+		3,                                                  	
 		4,                                                  	
 	
 		2000,                                                	
@@ -393,7 +376,7 @@ public static List<ThrowableDefinition> ThrowableDefinitions	= new List<Throwabl
 		WeaponItem.SHURIKEN,								
 		"StreetsweeperCratePart",									
 		
-		3,													
+		5,													
 		10,													
 		
 		3000,												
@@ -1469,6 +1452,48 @@ public static void CreateTimer(int interval, int count, string method, string id
 }
 
 /*
+Revive Dart
+Dobbo
+*/
+
+
+public class ReviveDart : Nugget{
+	
+	public static ThrowableBehaviour Init() {
+		return new ReviveDart();
+	}
+	
+	public ReviveDart() { CheckColliding = true; }
+	
+	protected override void OnCollision(IObject collidedObject)
+	{
+		base.OnCollision(collidedObject);
+		Game.WriteToConsole(collidedObject);
+		CheckColliding = false;
+		Revive(collidedObject);
+		Instance.Remove();
+	}
+	private void Revive(IObject collidedObject) {
+		var player = ScriptHelper.CastPlayer(collidedObject);
+		if (player != null && player.IsDead)
+		{
+			IUser deadUser = player.GetUser();
+			Events.UpdateCallback.Start((float e) => {
+				Game.PlayEffect(EffectName.Blood, RandomHelper.WithinArea(player.GetAABB()));
+			},100,10);
+			Events.UpdateCallback.Start(e => {
+				IPlayer newBody = Game.CreatePlayer(player.GetWorldPosition());
+				newBody.SetUser(deadUser);
+				IProfile prof = player.GetProfile();
+				newBody.SetProfile(prof);
+				newBody.SetTeam(Throwable.OwnerPlayer.GetTeam());
+				player.Remove();
+			}, 1000,1);
+		}
+	}
+}
+
+/*
 	Sticky Bomb
 	Ebomb09
 */
@@ -1564,115 +1589,6 @@ public class ArrowTrap : ThrowableBehaviour{
 }
 
 /*
-	Satellite Strike
-	Dobbo
-*/
-public class SatelliteStrike : ThrowableBehaviour{
-	bool isDone = false;
-	enum StrikeState{
-		Thrown,
-		AimTime,
-		BoomTime
-	};
-	
-	StrikePoint SPoint = null;
-	StrikeState State = StrikeState.Thrown;
-	class StrikePoint{
-	//If I run into errors, it may be because I don't really know how public works in these contexts
-		public Vector2 pos = Vector2.Zero;
-		public float lifetime = 0f;
-		public float crittime = 13f; //I am obviously cannibalizing code from Vortex Grenades, and I don't know why this equals 13, but exsceses almost certainly knows much more about C# than I do, so we're copying it
-		public float thirdtime = 13f;
-		public float fourthtime = 13f;
-		public bool alive = true;
-		public float MapHeight = Game.GetCameraMaxArea().Height;
-		
-		public StrikePoint(Vector2 target1, float target2){
-			this.pos = target1;
-			this.lifetime = target2;
-		}
-	}
-	
-	public static ThrowableBehaviour Init() {
-		return new SatelliteStrike();
-	}
-	
-	public override void Create(){
-		Game.PlaySound("MineArm", Throwable.Object.GetWorldPosition());		
-	}
-	
-	public override void Update() {
-		switch(State) {
-			case StrikeState.Thrown:
-				if(Throwable.ElapsedTime >= Throwable.Def.DetonationTime) {
-					
-					Game.PlaySound("C4Detonate", Position);
-					
-					State = StrikeState.AimTime;
-					SPoint = new StrikePoint(Position, Game.TotalElapsedGameTime + 1000f);
-					Throwable.Object.SetBodyType(BodyType.Static);
-				}
-			break;
-			
-			case StrikeState.AimTime:
-				if (SPoint != null) {
-					if(SPoint.lifetime < Game.TotalElapsedGameTime && SPoint.crittime == 13f){
-						
-						SPoint.crittime = Game.TotalElapsedGameTime + 1000f;
-						SPoint.thirdtime = Game.TotalElapsedGameTime + 1500f;
-						SPoint.fourthtime = Game.TotalElapsedGameTime + 1550f;
-					}
-										
-					if(SPoint.alive){
-						if (Game.TotalElapsedGameTime%rnd.Next(1,25)==2) {
-							Game.PlaySound("SniperAim", Vector2.Zero,0.4f);
-						}
-						if (SPoint.lifetime > Game.TotalElapsedGameTime) {
-							float xRadius = (SPoint.lifetime-Game.TotalElapsedGameTime)*64f/1000;
-							int maxOrbs = (64-(int)xRadius)/2;
-							for (int i = 0; i < maxOrbs; i++) {
-								
-								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*xRadius*2f-xRadius, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
-							}
-						}
-						if (SPoint.lifetime <= Game.TotalElapsedGameTime && Game.TotalElapsedGameTime < SPoint.crittime) {
-							for (int i = 0; i < 32; i++) {
-								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*2f-1, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
-							}
-						}
-						if (SPoint.thirdtime < Game.TotalElapsedGameTime && SPoint.thirdtime != 13f) {
-							State = StrikeState.BoomTime;
-							Throwable.Object.Remove();
-						}
-					}
-				}
-			break;
-			
-			case StrikeState.BoomTime:
-				if (SPoint.alive && Game.TotalElapsedGameTime < SPoint.fourthtime) {
-					Game.PlayEffect("CFTXT",Vector2.Zero,Convert.ToString(Game.TotalElapsedGameTime-SPoint.fourthtime));
-					for (int i = 0; i<100; i++) {
-						Vector2 exploLoc = new Vector2(SPoint.pos.X+rnd.Next(-100,100),SPoint.pos.Y+rnd.Next(-100,100));
-						if (Vector2.Distance(exploLoc,SPoint.pos) <=100) {
-							Game.TriggerExplosion(exploLoc);
-						}
-					}
-				}
-				
-				if (Game.TotalElapsedGameTime > SPoint.fourthtime) {
-					SPoint.alive = false;
-					isDone = true;
-				}
-			break;
-		}
-	}
-	
-	public override bool IsRemoved() {
-		return isDone;
-	}
-}
-
-/*
 	Vortex Grenades
 	exsceses
 */
@@ -1747,7 +1663,7 @@ public class VortexGrenade : ThrowableBehaviour{
 					Game.PlaySound("C4Detonate", Position);
 
 					State = VortexState.SuperNova;
-					Nova = new Supernovas(Position, Game.TotalElapsedGameTime + 2000f);
+					Nova = new Supernovas(Position, Game.TotalElapsedGameTime + 4000f);
 				}
 			break;
 			
@@ -1757,7 +1673,7 @@ public class VortexGrenade : ThrowableBehaviour{
 					
 					if(Nova.lifetime < Game.TotalElapsedGameTime && Nova.crittime == 13f){
 						Game.PlaySound("Break", Vector2.Zero);
-						Nova.crittime = Game.TotalElapsedGameTime + 900f;
+						Nova.crittime = Game.TotalElapsedGameTime + 1200f;
 					}
 					
 					if(Nova.crittime < Game.TotalElapsedGameTime && Nova.crittime != 13f && Nova.alive){
@@ -1769,8 +1685,8 @@ public class VortexGrenade : ThrowableBehaviour{
 					if(Nova.alive){
 						Area ar = new Area(Nova.pos.Y + Nova.Size, Nova.pos.X - Nova.Size, Nova.pos.Y - Nova.Size, Nova.pos.X + Nova.Size);
 						Game.DrawArea(ar);
-						if(Nova.lifetime > Game.TotalElapsedGameTime)Nova.Size += 0.25f;
-						if(Nova.crittime > Game.TotalElapsedGameTime && Nova.crittime != 13f && Nova.Size > 8f)Nova.Size -= 2f + (Nova.Mass);
+						if(Nova.lifetime > Game.TotalElapsedGameTime)Nova.Size += 1.2f;
+						if(Nova.crittime > Game.TotalElapsedGameTime && Nova.crittime != 13f && Nova.Size > 8f)Nova.Size -= 3f + (Nova.Mass);
 						Game.PlaySound("ElectricSparks", Vector2.Zero);
 
 						int sz = (int)Nova.Size;
@@ -1778,9 +1694,9 @@ public class VortexGrenade : ThrowableBehaviour{
 						int zsY = (int)Nova.pos.Y;
 						Game.PlayEffect("Electric", Nova.pos + new Vector2(rnd.Next(-8, 8), rnd.Next(-8, 8)));
 						int n = 0;
-						while(n++ < 3)Game.PlayEffect("Electric", new Vector2(rnd.Next(zsX - sz, zsX + sz), rnd.Next(zsY - sz, zsY + sz)));
+						while(n++ < 5)Game.PlayEffect("Electric", new Vector2(rnd.Next(zsX - sz, zsX + sz), rnd.Next(zsY - sz, zsY + sz)));
 						n = 0;
-						while(n++ < 4 && Nova.crittime > Game.TotalElapsedGameTime)Game.PlayEffect("S_P", new Vector2(rnd.Next(zsX - sz, zsX + sz), rnd.Next(zsY - sz, zsY + sz)));
+						while(n++ < 6 && Nova.crittime > Game.TotalElapsedGameTime)Game.PlayEffect("S_P", new Vector2(rnd.Next(zsX - sz, zsX + sz), rnd.Next(zsY - sz, zsY + sz)));
 
 
 						//LEVITATE//
@@ -1791,8 +1707,8 @@ public class VortexGrenade : ThrowableBehaviour{
 								obj.CustomId = "pull";
 								succ.Add(new Sucked(obj, Nova.lifetime + 899f, Nova.pos));
 
-								Nova.Mass += (obj.GetSize().X * obj.GetSize().Y) / 1500;
-								//Nova.Size += (obj.GetSize().X * obj.GetSize().Y) / 100;
+								Nova.Mass += (obj.GetSize().X * obj.GetSize().Y) / 500;
+								//Nova.Size += (obj.GetSize().X * obj.GetSize().Y) / 50;
 
 
 								IObjectPullJoint yank = (IObjectPullJoint)Game.CreateObject("PullJoint", obj.GetWorldPosition() + new Vector2(rnd.Next(-200, 200) / 100, obj.GetSize().Y * 1));
@@ -2341,8 +2257,8 @@ public class Nugget : ThrowableBehaviour
 
 public class TearingNugget : Nugget
 {
-	private const float TearingChance = .99f;
-	private const float Tearing2Chance = .66f;
+	private const float TearingChance = .9f;
+	private const float Tearing2Chance = .33f;
 
 	public static ThrowableBehaviour Init() { return new TearingNugget(); }
 
@@ -2518,6 +2434,7 @@ public class TearingNugget : Nugget
 	}
 }
 
+/*
 public class StickyNugget : Nugget
 {
 	private float m_timeElasped = 0f;
@@ -2623,6 +2540,64 @@ public class StickyNugget : Nugget
 	}
 }
 
+/*
+	Streetsweeper Swarm
+	Dob
+*/
+
+public class StreetsweeperSwarm : ThrowableBehaviour{
+	public static ThrowableBehaviour Init(){
+		return new StreetsweeperSwarm();
+	}
+	
+	List<IObjectStreetsweeper> ss = new List<IObjectStreetsweeper>();
+	float lifespan = 0;
+	
+	public override void Create(){
+		for (int i = 0; i < 16; i++) {
+			IObjectStreetsweeper ssTemp = (IObjectStreetsweeper)Game.CreateObject("Streetsweeper",new Vector2(Throwable.OwnerPlayer.GetWorldPosition().X +rnd.Next(-2000,2000)/100f,Throwable.OwnerPlayer.GetWorldPosition().Y + rnd.Next(-500,1000)/100f));
+			ssTemp.SetOwnerPlayer(Throwable.OwnerPlayer);
+			ssTemp.SetWeaponType(StreetsweeperWeaponType.None);
+			ss.Add(ssTemp);
+			Game.WriteToConsole(ssTemp.GetMaxHealth());
+		}
+	
+		IObjectTargetObjectJoint toj = (IObjectTargetObjectJoint)Game.CreateObject("TargetObjectJoint",Throwable.OwnerPlayer.GetWorldPosition());
+		toj.SetTargetObject(Throwable.OwnerPlayer);
+		foreach (IObjectStreetsweeper s in ss) {
+			IObjectDistanceJoint dj = (IObjectDistanceJoint)Game.CreateObject("DistanceJoint",s.GetWorldPosition());
+		
+			dj.SetTargetObjectJoint(toj);
+			dj.SetTargetObject(s);
+			dj.SetLineVisual(LineVisual.DJWire);
+			dj.SetLengthType(DistanceJointLengthType.Fixed);
+		}
+		
+	}
+	
+	public override void Update() {
+	IProjectile[] projs = Game.GetProjectiles();
+	foreach (IProjectile prj in projs) {
+		if (ScriptHelper.IntersectCircle(prj.Position,Throwable.OwnerPlayer.GetWorldPosition(),50f)) {
+			prj.Direction = prj.Direction*-1;
+		}
+	}
+	Throwable.Object.SetWorldPosition(new Vector2(5000,5000));
+		if (Throwable.ElapsedTime > 12000f){
+			foreach (IObjectStreetsweeper s in ss) {
+				s.Remove();
+				Throwable.Object.Remove();
+			}
+		} else if (Throwable.ElapsedTime < 12000f) {
+			foreach (IObjectStreetsweeper s in ss) {
+				s.SetHealth(9999.00f);
+				s.SetMovementType(StreetsweeperMovementType.Moving);
+			}
+		}
+	}
+}
+
+
 public class SuicideDove : Nugget
 {
 	public static ThrowableBehaviour Init() { return new SuicideDove(); }
@@ -2721,15 +2696,15 @@ public class PresentNugget : Nugget
 					Game.PlayEffect(EffectName.DestroyCloth, position);
 
 					var rndNum = RandomHelper.Between(0, 100);
-					if (rndNum < 2) // big oof
+					if (rndNum < 1) // big oof
 					{
 						SpawnBadSanta(position);
 					}
-					if (2 <= rndNum && rndNum < 10)
+					if (1 <= rndNum && rndNum < 5)
 					{
 						Game.CreateObject(RandomHelper.GetItem(m_oofs), position);
 					}
-					if (10 <= rndNum && rndNum < 50)
+					if (5 <= rndNum && rndNum < 30)
 					{
 						Game.CreateObject(RandomHelper.GetItem(m_presents), position);
 					}
@@ -2855,183 +2830,6 @@ public class PresentNugget : Nugget
 	}
 }
 
-/*
-	Revive Dart
-	Dobbo
-*/
-
-public class ReviveDart : Nugget{
-	
-	public static ThrowableBehaviour Init() {
-		return new ReviveDart();
-	}
-	
-	public ReviveDart() { CheckColliding = true; }
-	
-	protected override void OnCollision(IObject collidedObject)
-	{
-		base.OnCollision(collidedObject);
-		Game.WriteToConsole(collidedObject);
-		CheckColliding = false;
-		Revive(collidedObject);
-		Instance.Remove();
-	}
-	private void Revive(IObject collidedObject) {
-		var player = ScriptHelper.CastPlayer(collidedObject);
-		if (player != null && player.IsDead)
-		{
-			IUser deadUser = player.GetUser();
-			Events.UpdateCallback.Start((float e) => {
-				Game.PlayEffect(EffectName.Blood, RandomHelper.WithinArea(player.GetAABB()));
-			},100,10);
-			Events.UpdateCallback.Start(e => {
-				IPlayer newBody = Game.CreatePlayer(player.GetWorldPosition());
-				newBody.SetUser(deadUser);
-				IProfile prof = player.GetProfile();
-				newBody.SetProfile(prof);
-				newBody.SetTeam(Throwable.OwnerPlayer.GetTeam());
-				player.Remove();
-			}, 1000,1);
-		}
-	}
-}
-
-
-
-public class StunNugget : Nugget
-{
-	private class StunInfo
-	{
-		public IPlayer Player;
-		public float StunTime;
-		public float Elapsed = 0f;
-	}
-	private static Dictionary<int, StunInfo> StunnedPlayers = new Dictionary<int, StunInfo>();
-	static StunNugget()
-	{
-		Events.UpdateCallback.Start(e =>
-		{
-			foreach (var kv in StunnedPlayers.ToList())
-			{
-				var info = kv.Value;
-				var player = info.Player;
-
-				info.Elapsed += e;
-
-				if (!player.IsDeathKneeling)
-					player.AddCommand(new PlayerCommand(PlayerCommandType.DeathKneelInfinite));
-
-				if (ScriptHelper.IsElapsed(info.StunTime, 400))
-				{
-					info.StunTime = Game.TotalElapsedGameTime;
-					Game.PlayEffect(EffectName.Electric, RandomHelper.WithinArea(player.GetAABB()));
-				}
-				if (info.Elapsed >= StunTime)
-				{
-					player.AddCommand(new PlayerCommand(PlayerCommandType.StopDeathKneel));
-					player.SetInputEnabled(true);
-					StunnedPlayers.Remove(player.UniqueID);
-				}
-			}
-		});
-	}
-
-	public static ThrowableBehaviour Init() { return new StunNugget(); }
-	public const float StunRangeChance = 0.05f;
-	public const float StunTime = 3500;
-
-	public StunNugget() { CheckColliding = true; ExplosionRadius = 30f; }
-
-	public override void Create()
-	{
-		//Remove C4 Detonator
-		Throwable.OwnerPlayer.RemoveWeaponItemType(WeaponItemType.Thrown);
-	}
-
-	protected override void OnCollision(IObject collidedObject)
-	{
-		base.OnCollision(collidedObject);
-		CheckColliding = false;
-
-		if (RandomHelper.Percentage(StunRangeChance))
-			ElectrocuteRange(Instance, collidedObject);
-		else
-			Electrocute(Instance, collidedObject);
-		Instance.Remove();
-	}
-
-	private void PlayStunEffects(Vector2 position, bool isStunningPlayer)
-	{
-		Game.PlayEffect(EffectName.Electric, position);
-		Game.PlaySound("ElectricSparks", position);
-
-		var sparkFireChance = isStunningPlayer ? .1f : .5f;
-		if (RandomHelper.Percentage(sparkFireChance))
-		{
-			Game.SpawnFireNode(position, Vector2.Zero);
-			Game.PlayEffect(EffectName.FireTrail, position);
-		}
-	}
-
-	private void Stun(IPlayer player) { Stun(player, player.GetWorldPosition()); }
-	private void Stun(IPlayer player, Vector2 hitPosition)
-	{
-		if (!CanBeStunned(player)) return;
-
-		PlayStunEffects(hitPosition, true);
-		Game.PlayEffect(EffectName.CustomFloatText, hitPosition, "stunned");
-
-		player.SetInputEnabled(false);
-		player.AddCommand(new PlayerCommand(PlayerCommandType.DeathKneelInfinite));
-
-		StunnedPlayers.Add(player.UniqueID, new StunInfo()
-		{
-			Player = player,
-			StunTime = Game.TotalElapsedGameTime,
-		});
-	}
-
-	private void ElectrocuteRange(IObject Instance, IObject collidedObject)
-	{
-		foreach (var player in Game.GetPlayers())
-		{
-			if (ScriptHelper.IntersectCircle(player.GetAABB(), Position, ExplosionRadius))
-			{
-				Stun(player);
-			}
-		}
-
-		for (var i = 0; i < 360; i += 72) // Play electric effect 5 times in circle (360 / 5 = 72)
-		{
-			var direction = ScriptHelper.GetDirection(MathExtension.ToRadians(i));
-
-			Game.PlayEffect(EffectName.Electric, Position + direction * ExplosionRadius);
-			Game.PlaySound("ElectricSparks", Position);
-		}
-
-		if (Game.IsEditorTest)
-		{
-			Events.UpdateCallback.Start((e) => Game.DrawCircle(Position, ExplosionRadius, Color.Cyan),
-				0, 60 * 2);
-		}
-	}
-
-	private void Electrocute(IObject Instance, IObject collidedObject)
-	{
-		var player = ScriptHelper.CastPlayer(collidedObject);
-		if (player != null && !player.IsDead)
-		{
-			Stun(player, Position);
-		}
-		else
-			PlayStunEffects(Position, false);
-	}
-
-	private bool CanBeStunned(IPlayer player)
-	{
-		return !player.IsDead && !StunnedPlayers.ContainsKey(player.UniqueID);
-	}
-}
 
 public abstract class HoveringNugget : Nugget
 {
@@ -3259,7 +3057,7 @@ public class SmokeNugget : Nugget
 		if (ScriptHelper.IsElapsed(m_smokeRadiusExpandDelay, 400))
 		{
 			m_smokeRadiusExpandDelay = Game.TotalElapsedGameTime;
-			CurrentSmokeRadius = Math.Min(CurrentSmokeRadius + 6, ExplosionRadius);
+			CurrentSmokeRadius = Math.Min(CurrentSmokeRadius + 12, ExplosionRadius);
 		}
 
 		if (!ScriptHelper.IsElapsed(m_explodeTime, SmokeTime))
@@ -3878,23 +3676,14 @@ public class Longbow : ThrowableBehaviour
 		Game.PlayEffect("Electric", pos);
 	}
 }
-/*
-public class Firework : ThrowableBehaviour{
-	public static ThrowableBehaviour Init()
-	{
-		return new Firework();
-	}
-	
-	public override void Destroy
-}
-*/
+
 /*
 	Sync Mines
 	Ebomb09 + Minion
 */
 public class SyncMines : ThrowableBehaviour{
 	float ActivateTime = 0;
-	float SyncTime = 1500;
+	float SyncTime = 4000;
 	
 	float AnimActivate = 0;
 	float AnimTime = 0;
@@ -4199,11 +3988,120 @@ public class Boomerang : ThrowableBehaviour{
 
 	public override void Update(){
 		Throwable.Object.SetAngularVelocity(-Velocity.X);
-		Throwable.Object.SetLinearVelocity(Throwable.Object.GetLinearVelocity() + new Vector2(-Velocity.X / 100, 0.25f));
+		Throwable.Object.SetLinearVelocity(Throwable.Object.GetLinearVelocity() + new Vector2(-Velocity.X / 50, 0.25f));
 	}
 
 	public override void Destroy(){
 		Game.TriggerExplosion(Position);
 		Throwable.Object.Destroy();
+	}
+}
+
+/*
+	Satellite Strike
+	Dobbo
+*/
+public class SatelliteStrike : ThrowableBehaviour{
+	bool isDone = false;
+	enum StrikeState{
+		Thrown,
+		AimTime,
+		BoomTime
+	};
+	
+	StrikePoint SPoint = null;
+	StrikeState State = StrikeState.Thrown;
+	class StrikePoint{
+	//If I run into errors, it may be because I don't really know how public works in these contexts
+		public Vector2 pos = Vector2.Zero;
+		public float lifetime = 0f;
+		public float crittime = 13f; //I am obviously cannibalizing code from Vortex Grenades, and I don't know why this equals 13, but exsceses almost certainly knows much more about C# than I do, so we're copying it
+		public float thirdtime = 13f;
+		public float fourthtime = 13f;
+		public bool alive = true;
+		public float MapHeight = Game.GetCameraMaxArea().Height;
+		
+		public StrikePoint(Vector2 target1, float target2){
+			this.pos = target1;
+			this.lifetime = target2;
+		}
+	}
+	
+	public static ThrowableBehaviour Init() {
+		return new SatelliteStrike();
+	}
+	
+	public override void Create(){
+		Game.PlaySound("MineArm", Throwable.Object.GetWorldPosition());		
+	}
+	
+	public override void Update() {
+		switch(State) {
+			case StrikeState.Thrown:
+				if(Throwable.ElapsedTime >= Throwable.Def.DetonationTime) {
+					
+					Game.PlaySound("C4Detonate", Position);
+					
+					State = StrikeState.AimTime;
+					SPoint = new StrikePoint(Position, Game.TotalElapsedGameTime + 1000f);
+					Throwable.Object.SetBodyType(BodyType.Static);
+				}
+			break;
+			
+			case StrikeState.AimTime:
+				if (SPoint != null) {
+					if(SPoint.lifetime < Game.TotalElapsedGameTime && SPoint.crittime == 13f){
+						
+						SPoint.crittime = Game.TotalElapsedGameTime + 1000f;
+						SPoint.thirdtime = Game.TotalElapsedGameTime + 1500f;
+						SPoint.fourthtime = Game.TotalElapsedGameTime + 1550f;
+					}
+										
+					if(SPoint.alive){
+						if (Game.TotalElapsedGameTime%rnd.Next(1,25)==2) {
+							Game.PlaySound("SniperAim", Vector2.Zero,0.4f);
+						}
+						if (SPoint.lifetime > Game.TotalElapsedGameTime) {
+							float xRadius = (SPoint.lifetime-Game.TotalElapsedGameTime)*64f/1000;
+							int maxOrbs = (64-(int)xRadius)/2;
+							for (int i = 0; i < maxOrbs; i++) {
+								
+								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*xRadius*2f-xRadius, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
+							}
+						}
+						if (SPoint.lifetime <= Game.TotalElapsedGameTime && Game.TotalElapsedGameTime < SPoint.crittime) {
+							for (int i = 0; i < 32; i++) {
+								Game.PlayEffect("TR_B",new Vector2(SPoint.pos.X+(float)rnd.NextDouble()*2f-1, 1f*rnd.Next((int)SPoint.pos.Y, (int)SPoint.MapHeight)));
+							}
+						}
+						if (SPoint.thirdtime < Game.TotalElapsedGameTime && SPoint.thirdtime != 13f) {
+							State = StrikeState.BoomTime;
+							Throwable.Object.Remove();
+						}
+					}
+				}
+			break;
+			
+			case StrikeState.BoomTime:
+				if (SPoint.alive && Game.TotalElapsedGameTime < SPoint.fourthtime) {
+					Game.PlayEffect("CFTXT",Vector2.Zero,Convert.ToString(Game.TotalElapsedGameTime-SPoint.fourthtime));
+					for (int i = 0; i<100; i++) {
+						Vector2 exploLoc = new Vector2(SPoint.pos.X+rnd.Next(-100,100),SPoint.pos.Y+rnd.Next(-100,100));
+						if (Vector2.Distance(exploLoc,SPoint.pos) <=100) {
+							Game.TriggerExplosion(exploLoc);
+						}
+					}
+				}
+				
+				if (Game.TotalElapsedGameTime > SPoint.fourthtime) {
+					SPoint.alive = false;
+					isDone = true;
+				}
+			break;
+		}
+	}
+	
+	public override bool IsRemoved() {
+		return isDone;
 	}
 }

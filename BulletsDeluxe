@@ -1,10 +1,10 @@
 /*
-    ____        ____     __          ____     	 __	    ____       __              
-   / __ )__  __/ / /__  / /______   / __ \___   / /_	   / __ \___  / /_  ___  _____ 
-  / __  / / / / / / _ \/ __/ ___/  / / / / __\ / __ \	  / / / / _ \/ / / / / |/_/ _ \
- / /_/ / /_/ / / /  __/ /_(__  )  / /_/ / /_/ / /_/ /  / /_/ /  __/ / /_/ />  </  __/
-/_____/\__,_/_/_/\___/\__/____/  /_____/\____/_____/	/_____/\___/_/\__,_/_/|_|\___/
-	Writen By Dobbo and Ebomb09
+    ____        ____     __          ____       __              
+   / __ )__  __/ / /__  / /______   / __ \___  / /_  ___  _____ 
+  / __  / / / / / / _ \/ __/ ___/  / / / / _ \/ / / / / |/_/ _ \
+ / /_/ / /_/ / / /  __/ /_(__  )  / /_/ /  __/ / /_/ />  </  __/
+/_____/\__,_/_/_/\___/\__/____/  /_____/\___/_/\__,_/_/|_|\___/
+	Writen By Ebomb09
 	
 	Credits:
 		-Danger Ross
@@ -57,7 +57,7 @@
 	),
 */
 public static Ammo[] AmmoTypes = new Ammo[]{
-
+	
 	new Ammo(
 		null,
 		chainOnHit,
@@ -180,14 +180,6 @@ public static Ammo[] AmmoTypes = new Ammo[]{
 	
 	new Ammo(
 		null,
-		swapHit,
-		"Swap Bullets",
-		"Dobbo",
-		"Swaps two players on hit"
-	),
-	
-	new Ammo(
-		null,
 		balloonHit,
 		"Balloon Bullets",
 		"motto",
@@ -280,8 +272,6 @@ public static void OnStartup(){
 	ProjectileHit = Events.ProjectileHitCallback.Start(OnProjectileHit);
 	ProjectileCreated = Events.ProjectileCreatedCallback.Start(OnProjectileCreated);	
 	ObjectCreated = Events.ObjectCreatedCallback.Start(OnObjectCreated);	
-	
-	m_presentdayTerminated = Events.ObjectTerminatedCallback.Start(presentdayTerminated);
 	
 	UserMessage = Events.UserMessageCallback.Start(OnUserMessage);
 	
@@ -757,10 +747,9 @@ public static void OnObjectCreated(IObject[] objects){
 	if(GetConfigVar<bool>("SPECIAL_CRATE_ENABLED", true)){
 		
 		foreach(IObject obj in objects.Where(x => x.Name == "SupplyCrate00")){
-			Game.CreateObject("XmasPresent00",obj.GetWorldPosition());
-			obj.Remove();
+			
 			//Right Type
-/*			if(obj is IObjectSupplyCrate){
+			if(obj is IObjectSupplyCrate){
 				WeaponItem item = (obj as IObjectSupplyCrate).GetWeaponItem();
 
 				//Correct Category
@@ -785,7 +774,7 @@ public static void OnObjectCreated(IObject[] objects){
 						obj.Remove();
 					}
 				}
-			}*/
+			}
 		}
 	}
 }
@@ -1118,10 +1107,10 @@ public class gPlayer{
 			//Add Custom Ammo If Have Any Saved Up Ammo
 			if(Primary == null){
 				
-				if(Item1.WeaponItem != WeaponItem.NONE){
-					// DobEdit && SavedAmmo > 0
+				if(Item1.WeaponItem != WeaponItem.NONE && SavedAmmo > 0){
+					
 					if(GivePrimaryAmmo(GetRandomAmmo()))
-						SavedAmmo = 1;
+						SavedAmmo --;
 				}
 			}			
 		}
@@ -1160,10 +1149,10 @@ public class gPlayer{
 			//Add Custom Ammo If Have Any Saved Up Ammo
 			if(Secondary == null){
 				
-				if(Item2.WeaponItem != WeaponItem.NONE){
+				if(Item2.WeaponItem != WeaponItem.NONE && SavedAmmo > 0){
 					
 					if(GiveSecondaryAmmo(GetRandomAmmo()))
-						SavedAmmo = 1;
+						SavedAmmo --;
 				}
 			}
 		}
@@ -1374,8 +1363,7 @@ public static Ammo GetRandomAmmo(){
 	}
 	
 	if(AmmoList.Count > 0){
-		//return AmmoList[rnd.Next(0, AmmoList.Count)];
-		return AmmoList[12];
+		return AmmoList[rnd.Next(0, AmmoList.Count)];
 	}else{
 		return null;
 	}
@@ -1617,12 +1605,12 @@ public static void hollowPointHit(IProjectile pp, ProjectileHitArgs args){
 
 	var obj = Game.GetObject(Obj_ID);
 	if(obj is IPlayer && !obj.CustomId.Contains("Bleeder")){
-	((IPlayer)obj).CustomID = ((IPlayer)obj).CustomID + ":" "Bleeder/" + (Game.TotalElapsedGameTime + (3000f));
+	((IPlayer)obj).CustomId = "Bleeder/" + (Game.TotalElapsedGameTime + (3000f));
 	}
 	if(obj is IPlayer && obj.CustomId.Contains("Bleeder")){
-	((IPlayer)obj).CustomID = ((IPlayer)obj).CustomID.Split(':')[5] + ":" + "Bleeder/" + (float.Parse(((IPlayer)obj).CustomId.Split('/')[1]) + 1250f);
+	((IPlayer)obj).CustomId = "Bleeder/" + (float.Parse(((IPlayer)obj).CustomId.Split('/')[1]) + 1250f);
 	Game.PlayEffect("HIT_S", obj.GetWorldPosition());
-	//Game.PlayEffect("CFTXT",obj.GetWorldPosition(), obj.CustomID);
+	//Game.PlayEffect("CFTXT",obj.GetWorldPosition(), obj.CustomId);
 	}
 }
 
@@ -1792,7 +1780,7 @@ public static void lifestealHit(IProjectile pp, ProjectileHitArgs args){
 		PlayerModifiers shootingplymodify = shootingply.GetModifiers();
 
 		if (!ply.IsDead && shootingply.GetHealth() != 100){
-			shootingplymodify.CurrentHealth += args.Damage;
+			shootingplymodify.CurrentHealth += 5;
 			ply.SetModifiers( plymodify );
 			shootingply.SetModifiers( shootingplymodify );
 		}
@@ -1869,7 +1857,7 @@ public static void PunchBot(Vector2 position)
 
 	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.BotD));
 	player.SetBotBehaviorActive(true);
-	player.CustomId = "LastHit:This Cruel Universe:1000000:Demolecularization:Demolecularization:botBullet/" + Game.TotalElapsedGameTime;
+	player.CustomId = "botBullet" + Game.TotalElapsedGameTime;
 	player.SetTeam(PlayerTeam.Independent);
 		
 		CreateTimer(1500, 1, "KillBot", "botBullet" + Game.TotalElapsedGameTime);
@@ -1949,13 +1937,6 @@ public static readonly List<string> m_presents = new List<string>(){
 	"WpnBow",
 	"WpnFlareGun",
 	"WpnGrenadeLauncher",
-	"Baseball",
-	"FlagpoleUS",
-	"WpnGrenades",
-	"WpnMolotovs",
-	"WpnC4",
-	"WpnShuriken",
-	"WpnMines",
 };
 public static readonly List<string> m_oofs = new List<string>(){
 	"WpnGrenadesThrown",
@@ -1981,52 +1962,22 @@ public static void presentdayTerminated(IObject[] objs){
 			// and spawn something else as a workaround
 			customBullet.SetWorldPosition(new Vector2(-5000, 5000));
 
-			var rndNum = rnd.Next(0, 3000);
+			var rndNum = rnd.Next(0, 100);
 
-			if (rndNum < 1) // biggest oof
-			{	
-				Game.CreateObject("CargoContainer01A",position);
-			}
-			if (1 <= rndNum && rndNum < 10) {
-				SpawnElf(position);
-			}
-			if (10 <= rndNum && rndNum < 15) {
+			if (rndNum < 1) // big oof
+			{
 				SpawnBadSanta(position);
 			}
-			if (15 <= rndNum && rndNum < 100)
+			if (1 <= rndNum && rndNum < 5)
 			{
 				Game.CreateObject(GetItem(m_oofs), position);
 			}
-			if (100 <= rndNum && rndNum < 800)
+			if (5 <= rndNum && rndNum < 30)
 			{
 				Game.CreateObject(GetItem(m_presents), position);
 			}
 
 			m_presentdayBullets.Remove(obj.UniqueID);
-			
-		} else if (obj.Name.Equals("XmasPresent00")) {
-			var position = obj.GetWorldPosition();
-			var rndNum = rnd.Next(0, 3000);
-			
-			obj.SetWorldPosition(new Vector2(-5000,5000));
-			if (rndNum < 1) // big oof
-			{	
-				Game.CreateObject("CargoContainer01A",position);
-			}
-			if (1 <= rndNum && rndNum < 20) {
-				SpawnElf(position);
-			}
-			if (20 <= rndNum && rndNum < 30) {
-				SpawnBadSanta(position);
-			}
-			if (30 <= rndNum && rndNum < 300)
-			{
-				Game.CreateObject(GetItem(m_oofs), position);
-			}
-			if (300 <= rndNum && rndNum < 2000)
-			{
-				Game.CreateObject(GetItem(m_presents), position);
-			}
 		}
 	}
 }    
@@ -2125,44 +2076,6 @@ public static void SpawnBadSanta(Vector2 position){
 	Game.CreateDialogue("Ho ho ho!", new Color(128, 32, 32), player);
 }
 
-public static void SpawnElf(Vector2 position) {
-	var player = Game.CreatePlayer(position);
-
-	player.SetModifiers(new PlayerModifiers()
-	{
-		MaxHealth = 100,
-		CurrentHealth = 100,
-		ExplosionDamageTakenModifier = 0.5f,
-		SizeModifier = 0.5f,
-		EnergyConsumptionModifier = 0,
-		SprintSpeedModifier = 2,
-	});
-	player.SetProfile(new IProfile()
-	{
-		Name = "Elf",
-		Accesory = new IProfileClothingItem("Scarf", "ClothingYellow", "", ""),
-		ChestOver = new IProfileClothingItem("Robe", "ClothingDarkGreen", "", ""),
-		ChestUnder = new IProfileClothingItem("None", "ClothingLightGray", "ClothingLightGray", ""),
-		Feet = new IProfileClothingItem("ShoesBlack", "ClothingDarkGreen", "", ""),
-		Gender = Gender.Male,
-		Hands = new IProfileClothingItem("FingerlessGloves", "ClothingLightGray", "", ""),
-		Head = new IProfileClothingItem("SantaHat", "ClothingDarkGreen", "ClothingLightGray", ""),
-		Legs = new IProfileClothingItem("Pants", "ClothingYellow", "ClothingLightGray", ""),
-		Skin = new IProfileClothingItem("Tattoos", "Skin3", "ClothingPink", ""),
-		Waist = new IProfileClothingItem("Belt", "ClothingBlack", "ClothingLightYellow", ""),
-	});
-	player.SetBotName("Elf");
-
-	player.SetBotBehaviorSet(BotBehaviorSet.GetBotBehaviorPredefinedSet(PredefinedAIType.ChallengeA));
-	player.SetBotBehaviorActive(true);
-
-	player.SetTeam(PlayerTeam.Independent);
-
-	player.GiveWeaponItem(WeaponItem.KATANA);
-
-	Game.CreateDialogue("The Elf on the Shelf judges, and you have been found wanting", new Color(128, 32, 32), player);
-}
-
 /*
 	Slomo Bullets
 	tilt56
@@ -2187,19 +2100,6 @@ public static void teleHit(IProjectile projectile, ProjectileHitArgs args)
 }
 
 /*
-	Swap Bullets
-	Dobbo
-
-public static void swapHit(IProjectile projectile,ProjectileHitArgs args) {
-	IPlayer p = Game.GetPlayer(projectile.OwnerPlayerID);
-	
-	if (p != null && args.RemoveFlag) {
-		
-	}
-}
-*/
-
-/*
 	Balloon Bullets
 	motto
 */
@@ -2216,7 +2116,7 @@ public static void balloonHit(IProjectile projectile, ProjectileHitArgs args)
 	if(args.IsPlayer)
 	{
 		var vict = Game.GetPlayer(args.HitObjectID);
-		if (Game.GetSingleObjectByCustomId(vict.Name + "Thingy") == null)
+	if (Game.GetSingleObjectByCustomId(vict.Name + "Thingy") == null)
 		{
 			CreateBalloon(vict, true);
 			var tim = (IObjectTimerTrigger)Game.CreateObject("TimerTrigger");
@@ -2356,7 +2256,7 @@ public static void grappleHit(IProjectile pp, ProjectileHitArgs args){
 		pullJoint.SetLineVisual(LineVisual.DJRope);
 		pullJoint.CustomID = "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__";		
 		
-		CreateTimer(1500, 1, "RemoveGrapple", "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__");
+		CreateTimer(1000, 1, "RemoveGrapple", "__GRAPPLING_HOOK_" + Game.TotalElapsedGameTime + "__");
 	}
 }
 
@@ -2872,7 +2772,7 @@ public static void roundCreate(IProjectile p){
 		s = "Carwheel00";
 	var b = Game.CreateObject(s);
 	b.SetWorldPosition(s == "Baseball" ? p.Position : p.Position + p.Direction * 4);
-	b.SetLinearVelocity(p.Direction * 8);
+	b.SetLinearVelocity(p.Direction * 20);
 	b.TrackAsMissile(true);
 	b.SetHealth(1);
 	//Just in case removal fails, move the bullet away from the ball
@@ -3055,7 +2955,6 @@ public static void laserCreate(IProjectile p)
 		t.SetMaxFire();
 		t.SetLinearVelocity(t.GetLinearVelocity() + dir * 4);
 		if (t is IPlayer)
-		if (t is IPlayer)
 			t.SetWorldPosition(t.GetWorldPosition() + new Vector2(0, 2));
 		t.DealDamage(GetBulletDamage(p.ProjectileItem));
 		Game.SpawnFireNode(pos2, dir);
@@ -3082,68 +2981,68 @@ public static float GetBulletDamage(ProjectileItem i)
 	switch (i)
 	{
 		case ProjectileItem.ASSAULT:
-			dmg = 12;
+			dmg = 6;
 			break;
 		case ProjectileItem.BAZOOKA:
 		case ProjectileItem.GRENADE_LAUNCHER:
-			dmg = 80;
+			dmg = 60;
 			break;
 		case ProjectileItem.BOW:
-			dmg = 40;
-			break;
-		case ProjectileItem.CARBINE:
-			dmg = 15;
-			break;
-		case ProjectileItem.DARK_SHOTGUN:
-			dmg = 5;
-			break;
-		case ProjectileItem.FLAREGUN:
 			dmg = 25;
 			break;
+		case ProjectileItem.CARBINE:
+			dmg = 8;
+			break;
+		case ProjectileItem.DARK_SHOTGUN:
+			dmg = 3;
+			break;
+		case ProjectileItem.FLAREGUN:
+			dmg = 15;
+			break;
 		case ProjectileItem.M60:
-			dmg = 12;
-			break;
-		case ProjectileItem.MACHINE_PISTOL:
-			dmg = 10;
-			break;
-		case ProjectileItem.MAGNUM:
-			dmg = 20;
-			break;
-		case ProjectileItem.MP50:
-			dmg = 12;
-			break;
-		case ProjectileItem.PISTOL:
-			dmg = 10;
-			break;
-		case ProjectileItem.PISTOL45:
-			dmg = 10;
-			break;
-		case ProjectileItem.REVOLVER:
-			dmg = 16;
-			break;
-		case ProjectileItem.SAWED_OFF:
 			dmg = 6;
 			break;
-		case ProjectileItem.SHOTGUN:
+		case ProjectileItem.MACHINE_PISTOL:
 			dmg = 5;
 			break;
-		case ProjectileItem.SILENCEDPISTOL:
-			dmg = 5;
-			break;
-		case ProjectileItem.SILENCEDUZI:
-			dmg = 5;
-			break;
-		case ProjectileItem.SMG:
-			dmg = 8;
-			break;
-		case ProjectileItem.SNIPER:
-			dmg = 35;
-			break;
-		case ProjectileItem.TOMMYGUN:
+		case ProjectileItem.MAGNUM:
 			dmg = 10;
 			break;
-		case ProjectileItem.UZI:
+		case ProjectileItem.MP50:
+			dmg = 6;
+			break;
+		case ProjectileItem.PISTOL:
+			dmg = 5;
+			break;
+		case ProjectileItem.PISTOL45:
+			dmg = 5;
+			break;
+		case ProjectileItem.REVOLVER:
 			dmg = 8;
+			break;
+		case ProjectileItem.SAWED_OFF:
+			dmg = 3;
+			break;
+		case ProjectileItem.SHOTGUN:
+			dmg = 3;
+			break;
+		case ProjectileItem.SILENCEDPISTOL:
+			dmg = 3;
+			break;
+		case ProjectileItem.SILENCEDUZI:
+			dmg = 3;
+			break;
+		case ProjectileItem.SMG:
+			dmg = 4;
+			break;
+		case ProjectileItem.SNIPER:
+			dmg = 20;
+			break;
+		case ProjectileItem.TOMMYGUN:
+			dmg = 5;
+			break;
+		case ProjectileItem.UZI:
+			dmg = 4;
 			break;
 
 	}
